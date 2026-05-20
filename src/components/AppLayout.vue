@@ -11,6 +11,11 @@
         text-color="#bfcbd9"
         active-text-color="#409EFF"
       >
+        <el-menu-item index="/dashboard">
+          <el-icon><Odometer /></el-icon>
+          <span>仪表盘</span>
+        </el-menu-item>
+
         <el-menu-item index="/tasks/my">
           <el-icon><Checked /></el-icon>
           <span>我的待办</span>
@@ -35,7 +40,7 @@
           </el-menu-item>
           <el-menu-item index="/process/designer">
             <el-icon><Edit /></el-icon>
-            <span>流程设计</span>
+            <span>流程设计(含表单)</span>
           </el-menu-item>
         </el-sub-menu>
 
@@ -103,7 +108,8 @@ import {
   Memo,
   Document,
   Upload,
-  Edit
+  Edit,
+  Odometer
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

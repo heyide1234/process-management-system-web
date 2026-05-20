@@ -89,3 +89,7 @@ export function getTaskFormVariables(id: string) {
     '/engine-rest/task/' + id + '/form-variables'
   )
 }
+
+export function submitTaskForm(id: string, variables: Record<string, { value: any; type?: string }>) {
+  return api.post('/engine-rest/task/' + id + '/submit-form', { variables })
+}

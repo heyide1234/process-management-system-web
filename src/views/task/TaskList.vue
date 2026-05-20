@@ -93,40 +93,18 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="completeDialogVisible" title="完成任务" width="500px" :close-on-click-modal="false">
-      <el-form label-width="100px">
-        <el-form-item label="任务名称">
-          <el-input :model-value="completingTask?.name" disabled />
-        </el-form-item>
-        <el-form-item label="任务ID">
-          <el-input :model-value="completingTask?.id" disabled />
-        </el-form-item>
-        <el-form-item label="流程变量">
-          <div class="variable-list">
-            <div
-              v-for="(item, index) in completeVariables"
-              :key="index"
-              class="variable-row"
-            >
-              <el-input v-model="item.key" placeholder="变量名" style="width: 160px" />
-              <el-input v-model="item.value" placeholder="变量值" style="width: 160px" />
-              <el-select v-model="item.type" style="width: 100px">
-                <el-option label="String" value="String" />
-                <el-option label="Boolean" value="Boolean" />
-                <el-option label="Integer" value="Integer" />
-              </el-select>
-              <el-button link type="danger" @click="completeVariables.splice(index, 1)">删除</el-button>
-            </div>
-          </div>
-          <el-button size="small" @click="completeVariables.push({ key: '', value: '', type: 'String' })" style="margin-top: 8px">
-            + 添加变量
-          </el-button>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="completeDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="completeLoading" @click="handleComplete">完成</el-button>
-      </template>
+    <el-dialog v-model="completeDialogVisible" title="完成任务" width="600px" :close-on-click-modal="false" @closed="onCompleteDialogClosed">
+      <el-descriptions v-if="completingTask" :column="1" border style="margin-bottom: 16px">
+        <el-descriptions-item label="任务名称">{{ completingTask.name }}</el-descriptions-item>
+        <el-descriptions-item label="处理人">{{ completingTask.assignee }}</el-descriptions-item>
+      </el-descriptions>
+      <FormRenderer
+        v-if="completingTask"
+        :key="completingTask.id"
+        :task-id="completingTask.id"
+        @success="onFormSuccess"
+        @cancel="completeDialogVisible = false"
+      />
     </el-dialog>
 
     <el-dialog v-model="delegateDialogVisible" title="委派任务" width="400px" :close-on-click-modal="false">
@@ -166,10 +144,10 @@ import {
   getTask,
   claimTask,
   unclaimTask,
-  completeTask,
   delegateTask
 } from '../../api/task'
 import type { Task } from '../../api/task'
+import FormRenderer from '../../components/FormRenderer.vue'
 
 const currentUser = ref(localStorage.getItem('username') || '')
 
@@ -236,38 +214,20 @@ const handleUnclaim = async (row: Task) => {
 }
 
 const completeDialogVisible = ref(false)
-const completeLoading = ref(false)
 const completingTask = ref<Task | null>(null)
-const completeVariables = ref<{ key: string; value: string; type: string }[]>([])
 
 const openCompleteDialog = (row: Task) => {
   completingTask.value = row
-  completeVariables.value = []
   completeDialogVisible.value = true
 }
 
-const handleComplete = async () => {
-  if (!completingTask.value) return
-  completeLoading.value = true
-  try {
-    const variables: Record<string, any> = {}
-    completeVariables.value.forEach((v) => {
-      if (v.key) {
-        let val: any = v.value
-        if (v.type === 'Boolean') val = v.value === 'true'
-        else if (v.type === 'Integer') val = parseInt(v.value, 10)
-        variables[v.key] = { value: val, type: v.type }
-      }
-    })
-    await completeTask(completingTask.value.id, variables)
-    ElMessage.success('任务完成')
-    completeDialogVisible.value = false
-    fetchTasks()
-  } catch {
-    ElMessage.error('完成任务失败')
-  } finally {
-    completeLoading.value = false
-  }
+const onFormSuccess = () => {
+  completeDialogVisible.value = false
+  fetchTasks()
+}
+
+const onCompleteDialogClosed = () => {
+  completingTask.value = null
 }
 
 const delegateDialogVisible = ref(false)
@@ -342,14 +302,4 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.variable-list {
-  width: 100%;
-}
-
-.variable-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  align-items: center;
-}
 </style>
