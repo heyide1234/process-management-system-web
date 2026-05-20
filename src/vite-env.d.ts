@@ -6,6 +6,16 @@ declare module '*.vue' {
   export default component
 }
 
+declare module 'vform3-builds' {
+  import { Component, Plugin } from 'vue'
+  
+  export const VFormDesigner: Component
+  export const VFormRender: Component
+  
+  const vform: Plugin
+  export default vform
+}
+
 declare module 'bpmn-js/lib/Modeler' {
   export default class BpmnModeler {
     constructor(options: {

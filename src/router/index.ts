@@ -61,6 +61,36 @@ const routes = [
         path: 'profile',
         name: 'Profile',
         component: () => import('../views/Profile.vue')
+      },
+      {
+        path: 'form/templates',
+        name: 'FormTemplateList',
+        component: () => import('../views/form/FormTemplateList.vue')
+      },
+      {
+        path: 'form/create',
+        name: 'FormCreateList',
+        component: () => import('../views/form/FormCreateList.vue')
+      },
+      {
+        path: 'form/approval',
+        name: 'FormApproval',
+        component: () => import('../views/form/FormApproval.vue')
+      },
+      {
+        path: 'form/designer',
+        name: 'FormDesigner',
+        component: () => import('../views/form/FormDesigner.vue')
+      },
+      {
+        path: 'form/fill',
+        name: 'FormFill',
+        component: () => import('../views/form/FormFill.vue')
+      },
+      {
+        path: 'form/records',
+        name: 'FormRecordList',
+        component: () => import('../views/form/FormRecordList.vue')
       }
     ]
   }

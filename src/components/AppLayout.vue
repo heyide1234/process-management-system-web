@@ -40,7 +40,7 @@
           </el-menu-item>
           <el-menu-item index="/process/designer">
             <el-icon><Edit /></el-icon>
-            <span>流程设计(含表单)</span>
+            <span>流程设计</span>
           </el-menu-item>
         </el-sub-menu>
 
@@ -56,6 +56,25 @@
           <el-menu-item index="/admin/groups">
             <el-icon><Grid /></el-icon>
             <span>组列表</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="form-mgmt">
+          <template #title>
+            <el-icon><Tickets /></el-icon>
+            <span>表单管理</span>
+          </template>
+          <el-menu-item index="/form/templates">
+            <el-icon><Document /></el-icon>
+            <span>模板管理</span>
+          </el-menu-item>
+          <el-menu-item index="/form/create">
+            <el-icon><Edit /></el-icon>
+            <span>表单创建</span>
+          </el-menu-item>
+          <el-menu-item index="/form/approval">
+            <el-icon><Check /></el-icon>
+            <span>表单审批</span>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>
@@ -109,7 +128,9 @@ import {
   Document,
   Upload,
   Edit,
-  Odometer
+  Odometer,
+  Tickets,
+  Check
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

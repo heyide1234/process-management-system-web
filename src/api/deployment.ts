@@ -24,6 +24,33 @@ export interface DeploymentWithDefinitions extends Deployment {
   deployedCaseDefinitions: any
 }
 
+export interface FormTemplate {
+  id: string
+  name: string
+  description?: string
+  fields: any[]
+  processDefinitionKey?: string
+  vformJson?: any
+  formioSchema?: any
+  fcRules?: any
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FormInstance {
+  id: string
+  templateId: string
+  templateName: string
+  applicantName: string
+  status: 'pending' | 'approved' | 'rejected'
+  data: Record<string, any>
+  approvalComment?: string
+  taskId?: string
+  processInstanceId?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export function getDeployments(params?: {
   name?: string
   nameLike?: string
@@ -47,13 +74,17 @@ export function deleteDeployment(id: string, cascade?: boolean) {
 }
 
 export function createDeployment(formData: FormData) {
-  return api.post<DeploymentWithDefinitions>('/engine-rest/deployment/create', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  })
+  return api.post<DeploymentWithDefinitions>('/engine-rest/deployment/create', formData)
 }
 
 export function getDeploymentResources(id: string) {
   return api.get<{ id: string; name: string; deploymentId: string }[]>(
     '/engine-rest/deployment/' + id + '/resources'
   )
+}
+
+export function getDeploymentResourceData(deploymentId: string, resourceId: string) {
+  return api.get('/engine-rest/deployment/' + deploymentId + '/resources/' + resourceId + '/data', {
+    responseType: 'blob'
+  })
 }
