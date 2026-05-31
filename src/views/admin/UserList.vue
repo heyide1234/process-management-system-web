@@ -52,46 +52,61 @@
     <el-dialog
       v-model="formDialogVisible"
       :title="isEdit ? '编辑用户' : '新增用户'"
-      width="500px"
+      width="640px"
       :close-on-click-modal="false"
+      class="account-dialog"
     >
+      <div class="dialog-summary">
+        <div>
+          <h4>{{ isEdit ? '用户资料' : '创建用户' }}</h4>
+          <p>{{ isEdit ? '更新用户基础信息，密码留空则不修改。' : '填写登录账号、联系方式和初始密码。' }}</p>
+        </div>
+      </div>
       <el-form
         ref="formRef"
         :model="formData"
         :rules="formRules"
-        label-width="80px"
+        label-position="top"
+        class="account-form"
       >
-        <el-form-item label="用户名" prop="id">
-          <el-input
-            v-model="formData.id"
-            :disabled="isEdit"
-            placeholder="请输入用户名"
-          />
-        </el-form-item>
-        <el-form-item label="姓名" prop="fullName">
-          <el-input
-            v-model="formData.fullName"
-            placeholder="请输入姓名"
-          />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input
-            v-model="formData.email"
-            placeholder="请输入邮箱"
-          />
-        </el-form-item>
-        <el-form-item label="密码" :prop="isEdit ? 'password' : 'password'">
-          <el-input
-            v-model="formData.password"
-            type="password"
-            show-password
-            :placeholder="isEdit ? '留空则不修改密码' : '请输入密码'"
-          />
-        </el-form-item>
+        <div class="form-grid">
+          <el-form-item label="用户名" prop="id">
+            <el-input
+              v-model="formData.id"
+              :disabled="isEdit"
+              placeholder="请输入用户名"
+            />
+          </el-form-item>
+          <el-form-item label="姓名" prop="fullName">
+            <el-input
+              v-model="formData.fullName"
+              placeholder="请输入姓名"
+            />
+          </el-form-item>
+          <el-form-item label="邮箱" prop="email" class="grid-span-2">
+            <el-input
+              v-model="formData.email"
+              placeholder="请输入邮箱"
+            />
+          </el-form-item>
+          <el-form-item label="密码" prop="password" class="grid-span-2">
+            <el-input
+              v-model="formData.password"
+              type="password"
+              show-password
+              :placeholder="isEdit ? '留空则不修改密码' : '请输入密码'"
+            />
+            <div class="field-tip">至少 8 位，包含大小写字母和数字</div>
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
-        <el-button @click="formDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <div class="dialog-footer-actions">
+          <el-button @click="formDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
+            {{ isEdit ? '保存修改' : '创建用户' }}
+          </el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -153,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
@@ -260,6 +275,7 @@ const openAddDialog = () => {
   formData.email = ''
   formData.password = ''
   formDialogVisible.value = true
+  nextTick(() => formRef.value?.clearValidate())
 }
 
 const openEditDialog = async (userId: string) => {
@@ -271,6 +287,7 @@ const openEditDialog = async (userId: string) => {
     formData.email = res.data.email || ''
     formData.password = ''
     formDialogVisible.value = true
+    nextTick(() => formRef.value?.clearValidate())
   } catch {
     ElMessage.error('获取用户信息失败')
   }
@@ -423,7 +440,23 @@ onMounted(() => {
 
 .page-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  position: relative;
+  padding-bottom: 8px;
+  font-family: 'PingFang SC-Semibold';
+}
+
+.page-header h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+  border-radius: 2px;
 }
 
 .search-bar {
@@ -431,6 +464,59 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+
+.dialog-summary {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.dialog-summary h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dialog-summary p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.account-form {
+  margin-top: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+}
+
+.grid-span-2 {
+  grid-column: 1 / -1;
+}
+
+.field-tip {
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dialog-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.account-dialog :deep(.el-dialog__body) {
+  padding-top: 12px;
 }
 
 .group-transfer {

@@ -32,7 +32,7 @@ export interface VariableValue {
   valueInfo?: Record<string, any>
 }
 
-export function getProcessInstances(params?: {
+export interface ProcessInstanceQueryParams {
   processDefinitionKey?: string
   processDefinitionId?: string
   businessKey?: string
@@ -43,8 +43,14 @@ export function getProcessInstances(params?: {
   sortOrder?: 'asc' | 'desc'
   firstResult?: number
   maxResults?: number
-}) {
+}
+
+export function getProcessInstances(params?: ProcessInstanceQueryParams) {
   return api.get<ProcessInstance[]>('/engine-rest/process-instance', { params })
+}
+
+export function getProcessInstanceCount(params?: ProcessInstanceQueryParams) {
+  return api.get<{ count: number }>('/engine-rest/process-instance/count', { params })
 }
 
 export function getProcessInstance(id: string) {

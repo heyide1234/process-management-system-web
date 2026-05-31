@@ -1,80 +1,81 @@
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
-      <h2>仪表盘</h2>
-      <el-button type="primary" :icon="Refresh" :loading="loading" @click="fetchMetrics">
-        手动刷新
-      </el-button>
+      <h2 style="font-family: 'PingFang SC-Semibold';">仪表盘</h2>
     </div>
 
     <div class="dashboard-section">
-      <h3 class="section-title">实时动态</h3>
+      <h3 class="section-title">运行时状态</h3>
       <div class="metrics-grid">
         <div class="metric-card">
           <div class="metric-icon metric-icon-blue">
-            <el-icon :size="28"><VideoPlay /></el-icon>
+            <img :src="iconRunning" class="icon-img" alt="" />
           </div>
           <div class="metric-body">
-            <div class="metric-label">运行中实例</div>
-            <div class="metric-value">{{ metrics.rightNow.processInstances }}</div>
+            <div class="metric-label">运行中流程实例</div>
+            <div class="metric-value">{{ metrics.runningProcessInstances }}</div>
           </div>
+          <img :src="bgRunning" class="bg-illustration" alt="" />
         </div>
 
-        <div class="metric-card" :class="{ 'metric-card-danger': metrics.rightNow.incidents > 0 }">
-          <div class="metric-icon" :class="metrics.rightNow.incidents > 0 ? 'metric-icon-red' : 'metric-icon-orange'">
-            <el-icon :size="28"><WarningFilled /></el-icon>
+        <div class="metric-card">
+          <div class="metric-icon metric-icon-orange">
+            <img :src="iconError" class="icon-img" alt="" />
           </div>
           <div class="metric-body">
-            <div class="metric-label">未解决故障</div>
-            <div class="metric-value" :class="{ 'metric-value-danger': metrics.rightNow.incidents > 0 }">
-              {{ metrics.rightNow.incidents }}
-            </div>
+            <div class="metric-label">运行异常</div>
+            <div class="metric-value">{{ metrics.incidents }}</div>
           </div>
+          <img :src="bgError" class="bg-illustration" alt="" />
         </div>
 
         <div class="metric-card">
           <div class="metric-icon metric-icon-green">
-            <el-icon :size="28"><UserFilled /></el-icon>
+            <img :src="iconTask" class="icon-img" alt="" />
           </div>
           <div class="metric-body">
-            <div class="metric-label">待办人工任务</div>
-            <div class="metric-value">{{ metrics.rightNow.humanTasks }}</div>
+            <div class="metric-label">待办任务</div>
+            <div class="metric-value">{{ metrics.tasks }}</div>
           </div>
+          <img :src="bgTask" class="bg-illustration" alt="" />
         </div>
       </div>
     </div>
 
     <div class="dashboard-section">
-      <h3 class="section-title">已部署定义</h3>
+      <h3 class="section-title">已部署资源</h3>
       <div class="metrics-grid">
         <div class="metric-card">
           <div class="metric-icon metric-icon-purple">
-            <el-icon :size="28"><Document /></el-icon>
+            <img :src="iconProcess" class="icon-img" alt="" />
           </div>
           <div class="metric-body">
-            <div class="metric-label">流程定义数</div>
-            <div class="metric-value">{{ metrics.deployed.processDefinitions }}</div>
+            <div class="metric-label">流程定义</div>
+            <div class="metric-value">{{ metrics.processDefinitions }}</div>
           </div>
+          <img :src="bgProcess" class="bg-illustration" alt="" />
         </div>
 
         <div class="metric-card">
           <div class="metric-icon metric-icon-teal">
-            <el-icon :size="28"><Tickets /></el-icon>
+            <img :src="iconDecision" class="icon-img" alt="" />
           </div>
           <div class="metric-body">
-            <div class="metric-label">决策定义数</div>
-            <div class="metric-value">{{ metrics.deployed.decisionDefinitions }}</div>
+            <div class="metric-label">决策定义</div>
+            <div class="metric-value">{{ metrics.decisionDefinitions }}</div>
           </div>
+          <img :src="bgDecision" class="bg-illustration" alt="" />
         </div>
 
         <div class="metric-card">
           <div class="metric-icon metric-icon-cyan">
-            <el-icon :size="28"><Upload /></el-icon>
+            <img :src="iconDeployment" class="icon-img" alt="" />
           </div>
           <div class="metric-body">
-            <div class="metric-label">部署批次数</div>
-            <div class="metric-value">{{ metrics.deployed.deployments }}</div>
+            <div class="metric-label">部署</div>
+            <div class="metric-value">{{ metrics.deployments }}</div>
           </div>
+          <img :src="bgDeployment" class="bg-illustration" alt="" />
         </div>
       </div>
     </div>
@@ -84,34 +85,39 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
-import {
-  Refresh,
-  VideoPlay,
-  WarningFilled,
-  UserFilled,
-  Document,
-  Tickets,
-  Upload
-} from '@element-plus/icons-vue'
 import { getDashboardMetrics, type DashboardMetrics } from '../../api/dashboard'
 
-const loading = ref(false)
+import iconRunning from '../../styles/切图/图标渐变底 - 运行中流程实例@2x.png'
+import iconError from '../../styles/切图/图标渐变底 - 运行异常@2x.png'
+import iconTask from '../../styles/切图/图标渐变底 - 待办任务@2x.png'
+import iconProcess from '../../styles/切图/图标渐变底 - 流程定义@2x.png'
+import iconDecision from '../../styles/切图/图标渐变底 - 决策定义@2x.png'
+import iconDeployment from '../../styles/切图/图标渐变底 - 部署@2x.png'
+
+import bgRunning from '../../styles/切图/淡色插画 - 运行中流程实例@2x.png'
+import bgError from '../../styles/切图/淡色插画 - 运行异常@2x.png'
+import bgTask from '../../styles/切图/淡色插画 - 待办任务@2x.png'
+import bgProcess from '../../styles/切图/淡色插画 - 流程定义@2x.png'
+import bgDecision from '../../styles/切图/淡色插画 - 决策定义@2x.png'
+import bgDeployment from '../../styles/切图/淡色插画 - 部署@2x.png'
+
 const metrics = ref<DashboardMetrics>({
-  rightNow: { processInstances: 0, incidents: 0, humanTasks: 0 },
-  deployed: { processDefinitions: 0, decisionDefinitions: 0, deployments: 0 }
+  runningProcessInstances: 0,
+  incidents: 0,
+  tasks: 0,
+  processDefinitions: 0,
+  decisionDefinitions: 0,
+  deployments: 0
 })
 
 let timer: ReturnType<typeof setInterval> | null = null
 
 const fetchMetrics = async () => {
-  loading.value = true
   try {
     const res = await getDashboardMetrics()
-    metrics.value = res.data
+    metrics.value = res
   } catch {
     ElMessage.error('获取仪表盘数据失败')
-  } finally {
-    loading.value = false
   }
 }
 
@@ -134,64 +140,94 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .dashboard {
-  padding: 20px;
+  padding: 0;
 }
 
 .dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .dashboard-header h2 {
   margin: 0;
-  font-size: 22px;
-  color: #303133;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  position: relative;
+  padding-bottom: 8px;
+  font-family: 'PingFang SC-Semibold';
+}
+
+.dashboard-header h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+  border-radius: 2px;
 }
 
 .section-title {
-  margin: 0 0 14px 0;
-  font-size: 16px;
-  color: #606266;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 16px;
+  padding-left: 8px;
+  font-family: 'PingFang SC-Medium';
+  /* border-left: 4px solid #3B82F6; */
+}
+.dashboard-section{
+  margin:0px 20px;
 }
 
 .dashboard-section + .dashboard-section {
-  margin-top: 28px;
+  margin-top: 36px;
 }
 
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 80px;
+  height: 180px;
+  /* width: 480px; */
 }
 
 .metric-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 22px 20px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #ebeef5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 0.3s, transform 0.3s;
+  padding: 24px;
+  padding-left: 40px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  div:nth-child(1) {
+    flex: 1;
+    margin-top: -20px;
+    margin-right: 10px;
+
+  }
+  div:nth-child(2) {
+    flex: 3;
+    height: 60px;
+  }
+  >img {
+    flex: 2;
+    margin-top: 20px;
+  }
 }
 
 .metric-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-.metric-card-danger {
-  border-color: #fde2e2;
-  background: #fef5f5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .metric-icon {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -199,61 +235,61 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+.icon-img {
+  width: 90px;
+  height: 90px;
+}
+/* 
 .metric-icon-blue {
-  background-color: #ecf5ff;
-  color: #409eff;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
 }
 
 .metric-icon-orange {
-  background-color: #fdf6ec;
-  color: #e6a23c;
-}
-
-.metric-icon-red {
-  background-color: #fef0f0;
-  color: #f56c6c;
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 }
 
 .metric-icon-green {
-  background-color: #f0f9eb;
-  color: #67c23a;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
 }
 
 .metric-icon-purple {
-  background-color: #f4f0fe;
-  color: #a855f7;
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
 }
 
 .metric-icon-teal {
-  background-color: #f0fdfa;
-  color: #14b8a6;
+  background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
 }
 
 .metric-icon-cyan {
-  background-color: #ecfeff;
-  color: #06b6d4;
-}
+  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+} */
 
 .metric-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 }
 
 .metric-label {
-  font-size: 13px;
-  color: #909399;
+  font-size: 18px;
+  color: #6B7280;
+  font-weight: 500;
 }
 
 .metric-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
-  line-height: 1.2;
+  color: #1F2937;
+  line-height: 1;
 }
 
-.metric-value-danger {
-  color: #f56c6c;
-}
+/* .bg-illustration {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 150px;
+  height: 126px;
+  pointer-events: none;
+} */
 </style>

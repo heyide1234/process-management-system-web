@@ -48,9 +48,18 @@
           <el-tag v-else size="small" type="info">未分配</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="created" label="创建时间" min-width="170" />
+      <el-table-column prop="formKey" label="表单" width="140">
+        <template #default="{ row }">
+          <el-tag v-if="row.formKey" size="small" type="success">
+            <el-icon style="margin-right: 2px;"><Tickets /></el-icon>
+            {{ formatFormKeyDisplay(row.formKey) }}
+          </el-tag>
+          <span v-else style="color: #c0c4cc;">无</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="created" label="创建时间" min-width="170" :formatter="formatTableTime" />
       <el-table-column prop="priority" label="优先级" width="80" align="center" />
-      <el-table-column label="操作" width="320" fixed="right">
+      <el-table-column label="操作" width="380" fixed="right">
         <template #default="{ row }">
           <el-button
             v-if="!row.assignee"
@@ -66,9 +75,18 @@
             size="small"
             link
             type="success"
+            @click="handleNavigateToForm(row)"
+          >
+            办理
+          </el-button>
+          <el-button
+            v-if="row.assignee === currentUser && !row.suspended"
+            size="small"
+            link
+            type="primary"
             @click="openCompleteDialog(row)"
           >
-            完成
+            快速完成
           </el-button>
           <el-button
             v-if="row.assignee === currentUser"
@@ -146,8 +164,8 @@
         <el-descriptions-item label="任务ID" :span="2">{{ taskDetail.id }}</el-descriptions-item>
         <el-descriptions-item label="任务名称">{{ taskDetail.name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="处理人">{{ taskDetail.assignee || '未分配' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ taskDetail.created }}</el-descriptions-item>
-        <el-descriptions-item label="到期时间">{{ taskDetail.due || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(taskDetail.created) }}</el-descriptions-item>
+        <el-descriptions-item label="到期时间">{{ taskDetail.due ? formatDateTime(taskDetail.due) : '-' }}</el-descriptions-item>
         <el-descriptions-item label="流程定义ID" :span="2">{{ taskDetail.processDefinitionId }}</el-descriptions-item>
         <el-descriptions-item label="流程实例ID" :span="2">{{ taskDetail.processInstanceId }}</el-descriptions-item>
         <el-descriptions-item label="任务定义Key">{{ taskDetail.taskDefinitionKey }}</el-descriptions-item>
@@ -160,6 +178,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   getTasks,
@@ -169,7 +188,18 @@ import {
   completeTask,
   delegateTask
 } from '../../api/task'
+import { parseFormKey } from '../../api/form'
 import type { Task } from '../../api/task'
+import { Tickets } from '@element-plus/icons-vue'
+import { formatDateTime, formatTableTime } from '../../utils/format'
+
+const router = useRouter()
+
+const formatFormKeyDisplay = (formKey: string) => {
+  const parsed = parseFormKey(formKey)
+  if (!parsed) return formKey
+  return parsed.type === 'vform' ? '低代码' : 'HTML'
+}
 
 const currentUser = ref(localStorage.getItem('username') || '')
 
@@ -223,6 +253,23 @@ const handleClaim = async (row: Task) => {
   } catch {
     ElMessage.error('签收失败')
   }
+}
+
+const handleNavigateToForm = (row: Task) => {
+  if (row.formKey) {
+    const parsed = parseFormKey(row.formKey)
+    if (parsed) {
+      router.push({
+        path: '/form/fill',
+        query: { taskId: row.id, formKey: row.formKey }
+      })
+      return
+    }
+  }
+  router.push({
+    path: '/form/fill',
+    query: { taskId: row.id }
+  })
 }
 
 const handleUnclaim = async (row: Task) => {
@@ -333,6 +380,23 @@ onMounted(() => {
 
 .page-header h3 {
   margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  position: relative;
+  padding-bottom: 8px;
+  font-family: 'PingFang SC-Semibold';
+}
+
+.page-header h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+  border-radius: 2px;
 }
 
 .search-bar {

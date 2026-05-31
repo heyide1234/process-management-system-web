@@ -50,39 +50,61 @@
     <el-dialog
       v-model="formDialogVisible"
       :title="isEdit ? '编辑组' : '新增组'"
-      width="500px"
+      width="640px"
       :close-on-click-modal="false"
+      class="account-dialog"
     >
+      <div class="dialog-summary">
+        <div>
+          <h4>{{ isEdit ? '组资料' : '创建组' }}</h4>
+          <p>{{ isEdit ? '更新组名称和类型，组 ID 创建后不可修改。' : '填写组 ID、名称和类型，用于用户归属与授权。' }}</p>
+        </div>
+      </div>
       <el-form
         ref="formRef"
         :model="formData"
         :rules="formRules"
-        label-width="80px"
+        label-position="top"
+        class="account-form"
       >
-        <el-form-item label="组ID" prop="id">
-          <el-input
-            v-model="formData.id"
-            :disabled="isEdit"
-            placeholder="请输入组ID"
-          />
-        </el-form-item>
-        <el-form-item label="组名称" prop="name">
-          <el-input
-            v-model="formData.name"
-            placeholder="请输入组名称"
-          />
-        </el-form-item>
-        <el-form-item label="组类型" prop="type">
-          <el-select v-model="formData.type" placeholder="请选择组类型" style="width: 100%">
-            <el-option label="WORKFLOW" value="WORKFLOW" />
-            <el-option label="SYSTEM" value="SYSTEM" />
-            <el-option label="camunda-admin" value="camunda-admin" />
-          </el-select>
-        </el-form-item>
+        <div class="form-grid">
+          <el-form-item label="组ID" prop="id">
+            <el-input
+              v-model="formData.id"
+              :disabled="isEdit"
+              placeholder="请输入组ID"
+            />
+          </el-form-item>
+          <el-form-item label="组名称" prop="name">
+            <el-input
+              v-model="formData.name"
+              placeholder="请输入组名称"
+            />
+          </el-form-item>
+          <el-form-item label="组类型" prop="type" class="grid-span-2">
+            <el-select
+              v-model="formData.type"
+              placeholder="请选择或输入组类型"
+              filterable
+              allow-create
+              default-first-option
+              style="width: 100%"
+            >
+              <el-option label="WORKFLOW" value="WORKFLOW" />
+              <el-option label="SYSTEM" value="SYSTEM" />
+              <el-option label="camunda-admin" value="camunda-admin" />
+            </el-select>
+            <div class="field-tip">可直接选择常用类型，也可以输入自定义类型</div>
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
-        <el-button @click="formDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <div class="dialog-footer-actions">
+          <el-button @click="formDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
+            {{ isEdit ? '保存修改' : '创建组' }}
+          </el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -130,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
@@ -200,6 +222,7 @@ const openAddDialog = () => {
   formData.name = ''
   formData.type = ''
   formDialogVisible.value = true
+  nextTick(() => formRef.value?.clearValidate())
 }
 
 const openEditDialog = async (groupId: string) => {
@@ -210,6 +233,7 @@ const openEditDialog = async (groupId: string) => {
     formData.name = res.data.name || ''
     formData.type = res.data.type || ''
     formDialogVisible.value = true
+    nextTick(() => formRef.value?.clearValidate())
   } catch {
     ElMessage.error('获取组信息失败')
   }
@@ -338,7 +362,23 @@ onMounted(() => {
 
 .page-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  position: relative;
+  padding-bottom: 8px;
+  font-family: 'PingFang SC-Semibold';
+}
+
+.page-header h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+  border-radius: 2px;
 }
 
 .search-bar {
@@ -346,6 +386,59 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+
+.dialog-summary {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.dialog-summary h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dialog-summary p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.account-form {
+  margin-top: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+}
+
+.grid-span-2 {
+  grid-column: 1 / -1;
+}
+
+.field-tip {
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dialog-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.account-dialog :deep(.el-dialog__body) {
+  padding-top: 12px;
 }
 
 .member-transfer {

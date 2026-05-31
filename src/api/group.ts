@@ -1,4 +1,5 @@
 import api from './request'
+import type { CamundaUser } from './user'
 
 export interface CamundaGroup {
   id: string
@@ -31,13 +32,13 @@ export function deleteGroup(groupId: string) {
 }
 
 export function getGroupMembers(groupId: string) {
-  return api.get<{ id: string; firstName: string; lastName: string; email: string }[]>(
-    `/engine-rest/group/${groupId}/members`
-  )
+  return api.get<CamundaUser[]>('/engine-rest/user', {
+    params: { memberOfGroup: groupId }
+  })
 }
 
 export function addGroupMember(groupId: string, userId: string) {
-  return api.post(`/engine-rest/group/${groupId}/members`, { userId })
+  return api.put(`/engine-rest/group/${groupId}/members/${userId}`)
 }
 
 export function removeGroupMember(groupId: string, userId: string) {

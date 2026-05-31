@@ -58,6 +58,11 @@ const routes = [
         component: () => import('../views/admin/GroupList.vue')
       },
       {
+        path: 'admin/authorizations',
+        name: 'AuthorizationList',
+        component: () => import('../views/admin/AuthorizationList.vue')
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('../views/Profile.vue')
@@ -66,16 +71,6 @@ const routes = [
         path: 'form/templates',
         name: 'FormTemplateList',
         component: () => import('../views/form/FormTemplateList.vue')
-      },
-      {
-        path: 'form/create',
-        name: 'FormCreateList',
-        component: () => import('../views/form/FormCreateList.vue')
-      },
-      {
-        path: 'form/approval',
-        name: 'FormApproval',
-        component: () => import('../views/form/FormApproval.vue')
       },
       {
         path: 'form/designer',
@@ -91,6 +86,40 @@ const routes = [
         path: 'form/records',
         name: 'FormRecordList',
         component: () => import('../views/form/FormRecordList.vue')
+      } ,{
+        path: 'technical/notice',
+        name: 'NoticeContent',
+        component: () => import('../views/technical/NoticeContent.vue')
+      },
+      {
+        path: 'technical/implementation',
+        name: 'Implementation',
+        component: () => import('../views/technical/Implementation.vue')
+      },
+      {
+        path: 'technical/command-card',
+        name: 'CommandCard',
+        component: () => import('../views/technical/CommandCard.vue')
+      },
+      {
+        path: 'technical/implementation-record',
+        name: 'ImplementationRecord',
+        component: () => import('../views/technical/ImplementationRecord.vue')
+      },
+      {
+        path: 'technical/maintenance-plan',
+        name: 'MaintenancePlan',
+        component: () => import('../views/technical/MaintenancePlan.vue')
+      },
+      {
+        path: 'technical/tool-handover',
+        name: 'ToolHandover',
+        component: () => import('../views/technical/ToolHandover.vue')
+      },
+      {
+        path: 'technical/document-handover',
+        name: 'DocumentHandover',
+        component: () => import('../views/technical/DocumentHandover.vue')
       }
     ]
   }

@@ -35,10 +35,19 @@
     </div>
 
     <el-table :data="instanceList" v-loading="loading" border stripe>
-      <el-table-column prop="id" label="实例ID" min-width="220" show-overflow-tooltip />
-      <el-table-column prop="definitionId" label="流程定义ID" min-width="220" show-overflow-tooltip />
-      <el-table-column prop="businessKey" label="业务Key" min-width="150" />
-      <el-table-column label="状态" width="180" align="center">
+      <el-table-column label="流程名称" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">{{ getDefinitionName(row.definitionId) }}</template>
+      </el-table-column>
+      <el-table-column label="流程Key / 版本" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">{{ getDefinitionKeyVersion(row.definitionId) }}</template>
+      </el-table-column>
+      <el-table-column prop="businessKey" label="业务Key" min-width="150">
+        <template #default="{ row }">{{ row.businessKey || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="当前节点" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">{{ currentActivityMap[row.id] || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="状态" width="120" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.ended" type="info">已结束</el-tag>
           <el-tag v-else :type="row.suspended ? 'danger' : 'success'">
@@ -46,6 +55,8 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column prop="id" label="实例ID" min-width="220" show-overflow-tooltip />
+      <el-table-column prop="definitionId" label="定义ID" min-width="220" show-overflow-tooltip />
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button size="small" link type="primary" @click="openDetailDialog(row.id)">详情</el-button>
@@ -72,10 +83,12 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="detailDialogVisible" title="实例详情" width="800px">
+    <el-dialog v-model="detailDialogVisible" title="实例详情" width="900px">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="实例ID" :span="2">{{ detail?.id }}</el-descriptions-item>
-        <el-descriptions-item label="流程定义ID">{{ detail?.definitionId }}</el-descriptions-item>
+        <el-descriptions-item label="流程名称">{{ detail ? getDefinitionName(detail.definitionId) : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="流程Key / 版本">{{ detail ? getDefinitionKeyVersion(detail.definitionId) : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="流程定义ID" :span="2">{{ detail?.definitionId }}</el-descriptions-item>
         <el-descriptions-item label="业务Key">{{ detail?.businessKey || '-' }}</el-descriptions-item>
         <el-descriptions-item label="租户ID">{{ detail?.tenantId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
@@ -86,13 +99,20 @@
         </el-descriptions-item>
       </el-descriptions>
 
-      <h4 style="margin-top: 20px">当前活动节点</h4>
+      <h4 style="margin-top: 20px">流程进度</h4>
+      <BpmnViewer
+        :xml="processXml"
+        :active-activity-ids="activeActivityIds"
+        :completed-activity-ids="completedActivityIds"
+      />
+
+      <h4 style="margin-top: 20px">{{ detail?.ended ? '历史活动节点' : '当前活动节点' }}</h4>
       <el-table :data="activityList" v-loading="activityLoading" border stripe>
         <el-table-column prop="activityId" label="节点ID" min-width="180" />
         <el-table-column prop="activityName" label="节点名称" min-width="150" />
-        <el-table-column prop="activityType" label="节点类型" min-width="180" />
-
-        <el-table-column prop="incidentIdsCount" label="异常数" width="80" align="center" />
+        <el-table-column prop="activityType" label="节点类型" min-width="160" />
+        <el-table-column v-if="detail?.ended" prop="endTime" label="完成时间" min-width="160" :formatter="formatTableTime" />
+        <el-table-column v-if="!detail?.ended" prop="incidentIdsCount" label="异常数" width="80" align="center" />
       </el-table>
 
       <h4 style="margin-top: 20px">流程变量</h4>
@@ -120,8 +140,14 @@ import {
   getInstanceVariables,
   type ProcessInstance
 } from '../../api/instance'
+import { getHistoricActivityInstances } from '../../api/history'
+import { getProcessDefinitions, getProcessDefinitionXml, type ProcessDefinition } from '../../api/processDefinition'
+import BpmnViewer from '../../components/BpmnViewer.vue'
+import { formatTableTime } from '../../utils/format'
 
 const instanceList = ref<ProcessInstance[]>([])
+const definitionMap = ref<Record<string, ProcessDefinition>>({})
+const currentActivityMap = ref<Record<string, string>>({})
 const loading = ref(false)
 
 const search = reactive({
@@ -145,8 +171,13 @@ const fetchInstances = async () => {
         params.suspended = true
       }
     }
-    const res = await getProcessInstances(params)
+    const [res, definitionRes] = await Promise.all([
+      getProcessInstances(params),
+      getProcessDefinitions()
+    ])
+    definitionMap.value = Object.fromEntries(definitionRes.data.map((definition) => [definition.id, definition]))
     instanceList.value = res.data
+    await loadCurrentActivities(res.data)
   } catch {
     ElMessage.error('获取流程实例失败')
   } finally {
@@ -162,9 +193,44 @@ const resetSearch = () => {
   fetchInstances()
 }
 
+const getDefinition = (definitionId: string) => {
+  return definitionMap.value[definitionId]
+}
+
+const getDefinitionName = (definitionId: string) => {
+  const definition = getDefinition(definitionId)
+  return definition?.name || definition?.key || '-'
+}
+
+const getDefinitionKeyVersion = (definitionId: string) => {
+  const definition = getDefinition(definitionId)
+  if (!definition) return '-'
+  return `${definition.key} / v${definition.version}`
+}
+
+const loadCurrentActivities = async (instances: ProcessInstance[]) => {
+  const activeInstances = instances.filter((instance) => !instance.ended && !instance.suspended)
+  const entries = await Promise.all(activeInstances.map(async (instance) => {
+    try {
+      const res = await getActivityInstances(instance.id)
+      const root = res.data[instance.id]
+      if (!root) return [instance.id, '-'] as const
+      const leaves = collectLeafActivities([root])
+      const label = leaves
+        .map((activity) => activity.activityName || activity.activityId)
+        .filter(Boolean)
+        .join('，')
+      return [instance.id, label || '-'] as const
+    } catch {
+      return [instance.id, '-'] as const
+    }
+  }))
+  currentActivityMap.value = Object.fromEntries(entries)
+}
+
 const handleSuspend = async (row: ProcessInstance) => {
   try {
-    await ElMessageBox.confirm('确定挂起该流程实例？', '挂起确认', { type: 'warning' })
+    await ElMessageBox.confirm('确定挂起该流程实例？', '挂起确认', { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' })
     await suspendProcessInstance(row.id)
     ElMessage.success('已挂起')
     fetchInstances()
@@ -185,7 +251,7 @@ const handleActivate = async (row: ProcessInstance) => {
 
 const handleDelete = async (row: ProcessInstance) => {
   try {
-    await ElMessageBox.confirm('确定删除该流程实例？', '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm('确定删除该流程实例？', '删除确认', { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' })
     await deleteProcessInstance(row.id)
     ElMessage.success('删除成功')
     fetchInstances()
@@ -200,8 +266,23 @@ const activityList = ref<any[]>([])
 const activityLoading = ref(false)
 const variableList = ref<{ name: string; value: any; type: string }[]>([])
 const varLoading = ref(false)
+const processXml = ref('')
+const activeActivityIds = ref<string[]>([])
+const completedActivityIds = ref<string[]>([])
 
-const flattenActivities = (items: any[]): any[] => {
+function collectLeafActivities(items: any[]): any[] {
+  const leaves: any[] = []
+  for (const item of items) {
+    if (item.childActivityInstances && item.childActivityInstances.length) {
+      leaves.push(...collectLeafActivities(item.childActivityInstances))
+    } else {
+      leaves.push(item)
+    }
+  }
+  return leaves
+}
+
+function flattenActivities(items: any[]): any[] {
   const result: any[] = []
   for (const item of items) {
     result.push(item)
@@ -214,6 +295,12 @@ const flattenActivities = (items: any[]): any[] => {
 
 const openDetailDialog = async (id: string) => {
   detailDialogVisible.value = true
+  processXml.value = ''
+  activeActivityIds.value = []
+  completedActivityIds.value = []
+  activityList.value = []
+  variableList.value = []
+
   try {
     const res = await getProcessInstance(id)
     detail.value = res.data
@@ -223,9 +310,32 @@ const openDetailDialog = async (id: string) => {
 
   activityLoading.value = true
   try {
-    const res = await getActivityInstances(id)
-    const root = res.data[id]
-    activityList.value = root ? flattenActivities([root]) : []
+    if (detail.value && !detail.value.ended) {
+      const res = await getActivityInstances(id)
+      const root = res.data[id]
+      if (root) {
+        const allFlat = flattenActivities([root])
+        activityList.value = allFlat
+        const leaves = collectLeafActivities([root])
+        activeActivityIds.value = leaves.map((a: any) => a.activityId)
+        const parents = allFlat.filter((a: any) =>
+          !leaves.some((l: any) => l.id === a.id)
+        )
+        completedActivityIds.value = parents.map((a: any) => a.activityId)
+      }
+    } else if (detail.value) {
+      const res = await getHistoricActivityInstances({
+        processInstanceId: id,
+        sortBy: 'startTime',
+        sortOrder: 'asc',
+        maxResults: 200
+      })
+      activityList.value = res.data
+      completedActivityIds.value = res.data
+        .filter((a: any) => a.endTime)
+        .map((a: any) => a.activityId)
+      activeActivityIds.value = []
+    }
   } catch {
     // ignore
   } finally {
@@ -244,6 +354,15 @@ const openDetailDialog = async (id: string) => {
     // ignore
   } finally {
     varLoading.value = false
+  }
+
+  if (detail.value?.definitionId) {
+    try {
+      const xmlRes = await getProcessDefinitionXml(detail.value.definitionId)
+      processXml.value = xmlRes.data.bpmn20Xml || ''
+    } catch {
+      // xml load failed, diagram won't show
+    }
   }
 }
 
@@ -266,6 +385,23 @@ onMounted(() => {
 
 .page-header h3 {
   margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  position: relative;
+  padding-bottom: 8px;
+  font-family: 'PingFang SC-Semibold';
+}
+
+.page-header h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+  border-radius: 2px;
 }
 
 .search-bar {
