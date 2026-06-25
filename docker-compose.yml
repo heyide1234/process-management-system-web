@@ -1,0 +1,55 @@
+# docker-compose.yml - 全栈编排
+# 启动：docker-compose up -d
+# 停止：docker-compose down
+
+version: "3.8"
+
+services:
+  # ======== Camunda 7 流程引擎 ========
+  camunda:
+    image: camunda/camunda-bpm-platform:run-7.21.0
+    container_name: camunda7-engine
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_DRIVER=org.postgresql.Driver
+      - DB_URL=jdbc:postgresql://postgres:5432/camunda
+      - DB_USERNAME=camunda
+      - DB_PASSWORD=camunda
+      - WAIT_FOR=postgres:5432
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ======== PostgreSQL 数据库 ========
+  postgres:
+    image: postgres:15-alpine
+    container_name: camunda-db
+    environment:
+      - POSTGRES_DB=camunda
+      - POSTGRES_USER=camunda
+      - POSTGRES_PASSWORD=camunda
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U camunda -d camunda"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ======== 前端 ========
+  frontend:
+    build: .
+    container_name: process-management-web
+    ports:
+      - "80:80"
+    environment:
+      - CAMUNDA_HOST=camunda        # 指向 docker-compose 内部 service 名称
+    depends_on:
+      - camunda
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

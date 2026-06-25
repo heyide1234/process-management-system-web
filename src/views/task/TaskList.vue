@@ -33,7 +33,7 @@
         style="width: 220px"
         @keyup.enter="fetchTasks"
       />
-      <el-button type="primary" @click="fetchTasks">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
@@ -111,6 +111,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="onPageSizeChange"
+        @current-change="onPageChange"
+      />
+    </div>
+
     <el-dialog v-model="completeDialogVisible" title="完成任务" width="500px" :close-on-click-modal="false">
       <el-form label-width="100px">
         <el-form-item label="任务名称">
@@ -183,6 +196,7 @@ import { ElMessage } from 'element-plus'
 import {
   getTasks,
   getTask,
+  getTaskCount,
   claimTask,
   unclaimTask,
   completeTask,
@@ -192,8 +206,10 @@ import { parseFormKey } from '../../api/form'
 import type { Task } from '../../api/task'
 import { Tickets } from '@element-plus/icons-vue'
 import { formatDateTime, formatTableTime } from '../../utils/format'
+import { useAuthStore } from '../../stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const formatFormKeyDisplay = (formKey: string) => {
   const parsed = parseFormKey(formKey)
@@ -201,11 +217,14 @@ const formatFormKeyDisplay = (formKey: string) => {
   return parsed.type === 'vform' ? '低代码' : 'HTML'
 }
 
-const currentUser = ref(localStorage.getItem('username') || '')
+const currentUser = ref(authStore.username)
 
 const taskList = ref<Task[]>([])
 const loading = ref(false)
 const taskTab = ref('myTasks')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
 const search = reactive({
   name: '',
@@ -216,17 +235,38 @@ const search = reactive({
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const params: Record<string, any> = {}
+    const params: Record<string, any> = {
+      sortBy: 'created',
+      sortOrder: 'desc',
+      firstResult: (currentPage.value - 1) * pageSize.value,
+      maxResults: pageSize.value
+    }
+    const countParams: Record<string, any> = {}
     if (taskTab.value === 'myTasks') {
       params.assignee = currentUser.value
+      countParams.assignee = currentUser.value
     } else if (taskTab.value === 'unclaimed') {
       params.unassigned = true
+      countParams.unassigned = true
     }
-    if (search.name) params.nameLike = '%' + search.name + '%'
-    if (search.processDefinitionKey) params.processDefinitionKey = search.processDefinitionKey
-    if (search.processInstanceId) params.processInstanceId = search.processInstanceId
-    const res = await getTasks(params)
+    if (search.name) {
+      params.nameLike = '%' + search.name + '%'
+      countParams.nameLike = params.nameLike
+    }
+    if (search.processDefinitionKey) {
+      params.processDefinitionKey = search.processDefinitionKey
+      countParams.processDefinitionKey = search.processDefinitionKey
+    }
+    if (search.processInstanceId) {
+      params.processInstanceId = search.processInstanceId
+      countParams.processInstanceId = search.processInstanceId
+    }
+    const [res, countRes] = await Promise.all([
+      getTasks(params),
+      getTaskCount(countParams)
+    ])
     taskList.value = res.data
+    total.value = countRes.data.count
   } catch {
     ElMessage.error('获取任务列表失败')
   } finally {
@@ -234,14 +274,30 @@ const fetchTasks = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchTasks()
+}
+
 const resetSearch = () => {
   search.name = ''
   search.processDefinitionKey = ''
   search.processInstanceId = ''
+  currentPage.value = 1
   fetchTasks()
 }
 
 const onTabChange = () => {
+  currentPage.value = 1
+  fetchTasks()
+}
+
+const onPageSizeChange = () => {
+  currentPage.value = 1
+  fetchTasks()
+}
+
+const onPageChange = () => {
   fetchTasks()
 }
 
@@ -415,5 +471,11 @@ onMounted(() => {
   gap: 8px;
   margin-bottom: 8px;
   align-items: center;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import type { FormTemplate } from '../api/deployment'
-import { wrapHtmlFormDocument } from '../utils/htmlFormRuntime'
+import { stripVisibleHtmlFormApiScripts, wrapHtmlFormDocument } from '../utils/htmlFormRuntime'
 
 type MaybePromise<T> = T | Promise<T>
 type FormFieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLElement
@@ -135,10 +135,13 @@ function getRuntimeApi(): HtmlFormApi | null {
 }
 
 function handleHtmlFrameLoad() {
+  removeVisibleHtmlFormApiText()
+  expandHtmlFormLayout()
   applyFormData()
   applyDisabled()
   bindFrameResizeTriggers()
   adjustHtmlFrameHeight()
+  scheduleHtmlFormCleanup()
 }
 
 function bindFrameResizeTriggers() {
@@ -150,6 +153,18 @@ function bindFrameResizeTriggers() {
   doc.querySelectorAll('img').forEach((img) => {
     img.addEventListener('load', adjustHtmlFrameHeight, { once: true })
   })
+}
+
+function scheduleHtmlFormCleanup() {
+  const cleanup = () => {
+    removeVisibleHtmlFormApiText()
+    expandHtmlFormLayout()
+    adjustHtmlFrameHeight()
+  }
+
+  requestAnimationFrame(cleanup)
+  window.setTimeout(cleanup, 100)
+  window.setTimeout(cleanup, 500)
 }
 
 function adjustHtmlFrameHeight() {
@@ -164,9 +179,182 @@ function adjustHtmlFrameHeight() {
   })
 }
 
+function setImportantStyle(el: HTMLElement, property: string, value: string) {
+  el.style.setProperty(property, value, 'important')
+}
+
+function isNonVisualElement(el: Element) {
+  return ['script', 'style', 'template', 'meta', 'link', 'title'].includes(el.tagName.toLowerCase())
+}
+
+function isVisibleHtmlFormApiText(text: string) {
+  const normalized = text.replace(/\s+/g, ' ')
+  return normalized.length > 120 &&
+    (normalized.includes('window.htmlFormApi') || normalized.includes('htmlFormApi')) &&
+    normalized.includes('function') &&
+    normalized.includes('getData')
+}
+
+function removeVisibleHtmlFormApiText() {
+  const doc = getHtmlDocument()
+  if (!doc?.body) return
+
+  const cleanedBodyHtml = stripVisibleHtmlFormApiScripts(doc.body.innerHTML)
+  if (cleanedBodyHtml !== doc.body.innerHTML) {
+    doc.body.innerHTML = cleanedBodyHtml
+    return
+  }
+
+  doc
+    .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('textarea, input')
+    .forEach((el) => {
+      if (isVisibleHtmlFormApiText(el.value || '')) {
+        el.remove()
+      }
+    })
+
+  Array.from(doc.body.querySelectorAll<HTMLElement>('pre, code, p, div, section, article, aside'))
+    .reverse()
+    .forEach((el) => {
+      const tagName = el.tagName.toLowerCase()
+      if (tagName === 'script' || tagName === 'style' || tagName === 'template') return
+      if (!isVisibleHtmlFormApiText(el.textContent || '')) return
+
+      const hasFields = Boolean(
+        el.querySelector('input, select, textarea, button, [contenteditable], [data-field], [data-name], [data-key]')
+      )
+      if (!hasFields) {
+        el.remove()
+      }
+    })
+
+  const nodes: Text[] = []
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT)
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text
+    const parent = node.parentElement
+    if (!parent) continue
+
+    const tagName = parent.tagName.toLowerCase()
+    if (tagName === 'script' || tagName === 'style') continue
+    if (isVisibleHtmlFormApiText(node.nodeValue || '')) {
+      nodes.push(node)
+    }
+  }
+
+  nodes.forEach((node) => {
+    const parent = node.parentElement
+    node.remove()
+    if (
+      parent &&
+      parent.tagName.toLowerCase() !== 'body' &&
+      !parent.textContent?.trim() &&
+      parent.children.length === 0
+    ) {
+      parent.remove()
+    }
+  })
+}
+
+function expandHtmlFormLayout() {
+  const doc = getHtmlDocument()
+  if (!doc) return
+
+  const root = doc.documentElement
+  const body = doc.body
+  ;[root, body].filter(Boolean).forEach((el) => {
+    setImportantStyle(el, 'display', 'block')
+    setImportantStyle(el, 'width', '100%')
+    setImportantStyle(el, 'max-width', 'none')
+    setImportantStyle(el, 'box-sizing', 'border-box')
+  })
+
+  if (body) {
+    setImportantStyle(body, 'justify-content', 'normal')
+    setImportantStyle(body, 'align-items', 'stretch')
+    setImportantStyle(body, 'overflow-x', 'auto')
+  }
+
+  doc
+    .querySelectorAll<HTMLElement>(
+      [
+        'body > *',
+        'form',
+        'main',
+        'section',
+        '.container',
+        '.wrapper',
+        '.content',
+        '.main',
+        '.page',
+        '.sheet',
+        '.paper',
+        '.card',
+        '.form-card',
+        '.form-container',
+        '.form-wrapper',
+        '.form-content',
+        '.table-container',
+        '.table-wrapper',
+        '.table-scroll',
+        '.scroll-container'
+      ].join(', ')
+    )
+    .forEach((el) => {
+      if (isNonVisualElement(el)) {
+        setImportantStyle(el, 'display', 'none')
+        return
+      }
+      if (el.tagName.toLowerCase() !== 'table') {
+        setImportantStyle(el, 'display', 'block')
+      }
+      setImportantStyle(el, 'width', '100%')
+      setImportantStyle(el, 'max-width', 'none')
+      setImportantStyle(el, 'margin-left', '0')
+      setImportantStyle(el, 'margin-right', '0')
+      setImportantStyle(el, 'box-sizing', 'border-box')
+    })
+
+  doc
+    .querySelectorAll<HTMLElement>('.table-container, .table-wrapper, .table-scroll, .scroll-container')
+    .forEach((el) => {
+      setImportantStyle(el, 'max-height', 'none')
+      setImportantStyle(el, 'overflow-x', 'visible')
+    })
+
+  doc
+    .querySelectorAll<HTMLElement>('div, main, section, article, form')
+    .forEach((el) => {
+      if (!el.querySelector('table, form, input, select, textarea')) return
+      setImportantStyle(el, 'width', '100%')
+      setImportantStyle(el, 'max-width', 'none')
+      setImportantStyle(el, 'margin-left', '0')
+      setImportantStyle(el, 'margin-right', '0')
+      setImportantStyle(el, 'box-sizing', 'border-box')
+    })
+
+  doc.querySelectorAll<HTMLTableElement>('table').forEach((table) => {
+    table.style.removeProperty('max-width')
+    table.style.removeProperty('min-width')
+    table.style.removeProperty('table-layout')
+    setImportantStyle(table, 'min-width', '100%')
+    setImportantStyle(table, 'table-layout', 'auto')
+  })
+
+  doc.querySelectorAll<HTMLElement>('input, select, textarea').forEach((el) => {
+    setImportantStyle(el, 'max-width', '100%')
+  })
+
+  doc.querySelectorAll<HTMLElement>('script, style, template').forEach((el) => {
+    setImportantStyle(el, 'display', 'none')
+  })
+}
+
 function applyFormData() {
   if (props.template?.type !== 'html') return
 
+  expandHtmlFormLayout()
   const data = expandObjectValues({ ...formDataProxy })
   const api = getRuntimeApi()
   if (api?.setData) {

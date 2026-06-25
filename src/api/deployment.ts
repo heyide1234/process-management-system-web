@@ -43,6 +43,14 @@ export interface FormTemplate {
   updatedAt: string
 }
 
+export function getDeploymentCount(params?: {
+  name?: string
+  nameLike?: string
+  source?: string
+}) {
+  return api.get<{ count: number }>('/engine-rest/deployment/count', { params })
+}
+
 export function getDeployments(params?: {
   name?: string
   nameLike?: string

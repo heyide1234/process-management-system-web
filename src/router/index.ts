@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import AppLayout from '../components/AppLayout.vue'
+import { useAuthStore } from '../stores/auth'
 
 const routes = [
   {
@@ -86,40 +87,6 @@ const routes = [
         path: 'form/records',
         name: 'FormRecordList',
         component: () => import('../views/form/FormRecordList.vue')
-      } ,{
-        path: 'technical/notice',
-        name: 'NoticeContent',
-        component: () => import('../views/technical/NoticeContent.vue')
-      },
-      {
-        path: 'technical/implementation',
-        name: 'Implementation',
-        component: () => import('../views/technical/Implementation.vue')
-      },
-      {
-        path: 'technical/command-card',
-        name: 'CommandCard',
-        component: () => import('../views/technical/CommandCard.vue')
-      },
-      {
-        path: 'technical/implementation-record',
-        name: 'ImplementationRecord',
-        component: () => import('../views/technical/ImplementationRecord.vue')
-      },
-      {
-        path: 'technical/maintenance-plan',
-        name: 'MaintenancePlan',
-        component: () => import('../views/technical/MaintenancePlan.vue')
-      },
-      {
-        path: 'technical/tool-handover',
-        name: 'ToolHandover',
-        component: () => import('../views/technical/ToolHandover.vue')
-      },
-      {
-        path: 'technical/document-handover',
-        name: 'DocumentHandover',
-        component: () => import('../views/technical/DocumentHandover.vue')
       }
     ]
   }
@@ -131,10 +98,10 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('token')
-  if (to.matched.some(record => record.meta.requiresAuth) && !token) {
+  const auth = useAuthStore()
+  if (to.matched.some(record => record.meta.requiresAuth) && !auth.isAuthenticated) {
     next('/login')
-  } else if (to.path === '/login' && token) {
+  } else if (to.path === '/login' && auth.isAuthenticated) {
     next('/')
   } else {
     next()

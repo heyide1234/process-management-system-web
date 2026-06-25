@@ -1,65 +1,67 @@
 <template>
   <div class="html-form-editor">
-    <el-tabs v-model="activeTab" type="border-card">
+    <el-tabs v-model="activeTab" type="border-card" class="html-editor-tabs">
       <el-tab-pane label="代码编辑" name="code">
-        <div class="editor-toolbar">
-          <el-dropdown @command="insertSnippet">
-            <el-button size="small">
-              <el-icon><Plus /></el-icon>
-              插入模板片段
-              <el-icon><ArrowDown /></el-icon>
+        <div class="code-editor-layout">
+          <div class="editor-toolbar">
+            <el-dropdown @command="insertSnippet">
+              <el-button size="small">
+                <el-icon><Plus /></el-icon>
+                插入模板片段
+                <el-icon><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="text">
+                    <el-icon><Edit /></el-icon>
+                    文本输入
+                  </el-dropdown-item>
+                  <el-dropdown-item command="number">
+                    <el-icon><Edit /></el-icon>
+                    数字输入
+                  </el-dropdown-item>
+                  <el-dropdown-item command="date">
+                    <el-icon><Calendar /></el-icon>
+                    日期选择
+                  </el-dropdown-item>
+                  <el-dropdown-item command="select">
+                    <el-icon><List /></el-icon>
+                    下拉选择
+                  </el-dropdown-item>
+                  <el-dropdown-item command="textarea">
+                    <el-icon><Document /></el-icon>
+                    多行文本
+                  </el-dropdown-item>
+                  <el-dropdown-item command="checkbox">
+                    <el-icon><Select /></el-icon>
+                    复选框
+                  </el-dropdown-item>
+                  <el-dropdown-item command="radio">
+                    <el-icon><Select /></el-icon>
+                    单选框
+                  </el-dropdown-item>
+                  <el-dropdown-item command="form-group">
+                    <el-icon><Grid /></el-icon>
+                    表单分组
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <el-button size="small" @click="formatHtml">
+              <el-icon><Operation /></el-icon>
+              格式化
             </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="text">
-                  <el-icon><Edit /></el-icon>
-                  文本输入
-                </el-dropdown-item>
-                <el-dropdown-item command="number">
-                  <el-icon><Edit /></el-icon>
-                  数字输入
-                </el-dropdown-item>
-                <el-dropdown-item command="date">
-                  <el-icon><Calendar /></el-icon>
-                  日期选择
-                </el-dropdown-item>
-                <el-dropdown-item command="select">
-                  <el-icon><List /></el-icon>
-                  下拉选择
-                </el-dropdown-item>
-                <el-dropdown-item command="textarea">
-                  <el-icon><Document /></el-icon>
-                  多行文本
-                </el-dropdown-item>
-                <el-dropdown-item command="checkbox">
-                  <el-icon><Select /></el-icon>
-                  复选框
-                </el-dropdown-item>
-                <el-dropdown-item command="radio">
-                  <el-icon><Select /></el-icon>
-                  单选框
-                </el-dropdown-item>
-                <el-dropdown-item command="form-group">
-                  <el-icon><Grid /></el-icon>
-                  表单分组
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-button size="small" @click="formatHtml">
-            <el-icon><Operation /></el-icon>
-            格式化
-          </el-button>
+          </div>
+          <textarea
+            ref="editorRef"
+            class="html-editor-textarea"
+            :value="modelValue"
+            @input="handleInput"
+            @keydown="handleKeydown"
+            spellcheck="false"
+            placeholder="在此编写 HTML 表单代码..."
+          />
         </div>
-        <textarea
-          ref="editorRef"
-          class="html-editor-textarea"
-          :value="modelValue"
-          @input="handleInput"
-          @keydown="handleKeydown"
-          spellcheck="false"
-          placeholder="在此编写 HTML 表单代码..."
-        />
       </el-tab-pane>
 
       <el-tab-pane label="实时预览" name="preview">
@@ -92,6 +94,7 @@ import {
   Grid,
   Operation
 } from '@element-plus/icons-vue'
+import { stripVisibleHtmlFormApiScripts } from '../utils/htmlFormRuntime'
 
 const props = defineProps<{
   modelValue: string
@@ -161,7 +164,7 @@ const snippets: Record<string, string> = {
 }
 
 const previewHtml = computed(() => {
-  const content = props.modelValue || ''
+  const content = stripVisibleHtmlFormApiScripts(props.modelValue || '')
   return wrapPreview(content)
 })
 
@@ -299,12 +302,47 @@ watch(activeTab, (val) => {
 <style scoped>
 .html-form-editor {
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: 4px;
   overflow: hidden;
 }
 
+.html-editor-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.html-editor-tabs :deep(.el-tabs__header) {
+  flex-shrink: 0;
+}
+
+.html-editor-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.html-editor-tabs :deep(.el-tab-pane) {
+  height: 100%;
+  min-height: 0;
+}
+
+.code-editor-layout {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .editor-toolbar {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
   padding: 8px;
   border-bottom: 1px solid #e4e7ed;
@@ -313,11 +351,13 @@ watch(activeTab, (val) => {
 
 .html-editor-textarea {
   width: 100%;
-  min-height: 450px;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
   padding: 16px;
   border: none;
   outline: none;
-  resize: vertical;
+  resize: none;
   font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
   font-size: 14px;
   line-height: 1.6;
@@ -325,6 +365,7 @@ watch(activeTab, (val) => {
   color: #303133;
   background: #fff;
   box-sizing: border-box;
+  overflow: auto;
 }
 
 .html-editor-textarea::placeholder {
@@ -332,13 +373,19 @@ watch(activeTab, (val) => {
 }
 
 .preview-container {
-  min-height: 400px;
+  height: 100%;
+  min-height: 0;
   padding: 0;
+}
+
+.preview-container :deep(.el-empty) {
+  height: 100%;
 }
 
 .preview-iframe {
   width: 100%;
-  min-height: 400px;
+  height: 100%;
+  min-height: 0;
   border: none;
   display: block;
 }

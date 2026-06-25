@@ -12,11 +12,11 @@
         style="width: 250px"
         @keyup.enter="applyFilter"
       />
-      <el-button type="primary" @click="applyFilter">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
-    <el-table :data="recordList" v-loading="loading" border stripe>
+    <el-table :data="pagedRecords" v-loading="loading" border stripe>
       <el-table-column prop="processDefinitionName" label="所属流程" min-width="180" show-overflow-tooltip />
       <el-table-column prop="formName" label="表单名称" min-width="180" show-overflow-tooltip>
         <template #default="{ row }">
@@ -43,10 +43,22 @@
       </el-table-column>
     </el-table>
 
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="recordList.length"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
+
     <el-dialog
       v-model="viewDialogVisible"
       :title="viewingTitle || '表单详情'"
-      width="900px"
+      width="min(1400px, 96vw)"
+      class="form-record-dialog"
       destroy-on-close
     >
       <div v-if="viewLoading" class="view-loading">
@@ -89,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import FormRenderer from '../../components/FormRenderer.vue'
 import {
@@ -107,6 +119,7 @@ import {
   getDeploymentResourceData
 } from '../../api/deployment'
 import { extractFormKeyFromBpmnXml, parseFormKey, type FormKeyInfo } from '../../api/form'
+import { useAuthStore } from '../../stores/auth'
 import { formatDateTime, formatTableTime } from '../../utils/format'
 import type { FormTemplate } from '../../api/deployment'
 
@@ -129,6 +142,13 @@ interface ViewResult {
 
 const loading = ref(false)
 const recordList = ref<RecordRow[]>([])
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+const pagedRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return recordList.value.slice(start, start + pageSize.value)
+})
 
 const search = reactive({
   keyword: ''
@@ -144,11 +164,12 @@ const viewResult = ref<ViewResult | null>(null)
 const allRecords = ref<RecordRow[]>([])
 const definitionXmlCache = new Map<string, Promise<string>>()
 const templateNameCache = new Map<string, Promise<string>>()
+const authStore = useAuthStore()
 
 const fetchRecords = async () => {
   loading.value = true
   try {
-    const username = localStorage.getItem('username') || ''
+    const username = authStore.username
 
     const tasksRes = await getHistoricTasks({
       taskAssignee: username,
@@ -199,6 +220,7 @@ const fetchRecords = async () => {
 }
 
 const applyFilter = () => {
+  currentPage.value = 1
   if (!search.keyword) {
     recordList.value = allRecords.value
     return
@@ -208,6 +230,10 @@ const applyFilter = () => {
     row.processDefinitionName.toLowerCase().includes(kw) ||
     row.formName.toLowerCase().includes(kw)
   )
+}
+
+const handleSearch = () => {
+  applyFilter()
 }
 
 const resetSearch = () => {
@@ -356,7 +382,7 @@ const viewRecord = async (row: RecordRow) => {
   viewLoading.value = true
 
   try {
-    const username = localStorage.getItem('username') || ''
+    const username = authStore.username
 
     const [tasksRes, xmlRes] = await Promise.all([
       getHistoricTasks({
@@ -474,7 +500,7 @@ onMounted(() => {
 
 <style scoped>
 .form-record-page {
-  padding: 20px;
+  /* padding: 20px; */
 }
 
 .page-header {

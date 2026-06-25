@@ -13,11 +13,11 @@
         style="width: 200px"
         @keyup.enter="fetchTemplates"
       />
-      <el-button type="primary" @click="fetchTemplates">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
-    <el-table :data="templateList" v-loading="loading" border stripe>
+    <el-table :data="pagedTemplates" v-loading="loading" border stripe>
       <el-table-column prop="name" label="模板名称" min-width="150" />
       <el-table-column label="类型" width="90">
         <template #default="{ row }">
@@ -38,19 +38,31 @@
       </el-table-column>
       <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
       <el-table-column prop="deploymentTime" label="部署时间" min-width="160" :formatter="formatTableTime" />
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="360" fixed="right">
         <template #default="{ row }">
           <el-button size="small" link type="primary" @click="handleEdit(row)">编辑</el-button>
+          <el-button size="small" link type="primary" @click="handleCopy(row)">复制为新模板</el-button>
           <el-button size="small" link type="success" @click="handlePreview(row)">预览</el-button>
           <el-button size="small" link type="danger" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="templateList.length"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -68,6 +80,13 @@ const router = useRouter()
 
 const templateList = ref<Array<Deployment & { description?: string; formType?: string; templateFormKey?: string }>>([])
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+const pagedTemplates = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return templateList.value.slice(start, start + pageSize.value)
+})
 
 const search = reactive({
   name: ''
@@ -143,8 +162,14 @@ const fetchTemplates = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchTemplates()
+}
+
 const resetSearch = () => {
   search.name = ''
+  currentPage.value = 1
   fetchTemplates()
 }
 
@@ -159,7 +184,18 @@ const getFormKey = (row: Deployment & { formType?: string; templateFormKey?: str
 const copyFormKey = async (row: Deployment & { formType?: string; templateFormKey?: string }) => {
   const key = getFormKey(row)
   try {
-    await navigator.clipboard.writeText(key)
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(key)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = key
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
     ElMessage.success(`已复制: ${key}`)
   } catch {
     ElMessage.error('复制失败，请手动复制')
@@ -168,6 +204,13 @@ const copyFormKey = async (row: Deployment & { formType?: string; templateFormKe
 
 const handleEdit = (row: Deployment & { formType?: string; templateFormKey?: string }) => {
   router.push(`/form/designer?id=${row.id}`)
+}
+
+const handleCopy = (row: Deployment & { formType?: string; templateFormKey?: string }) => {
+  router.push({
+    path: '/form/designer',
+    query: { copyFrom: row.id }
+  })
 }
 
 const handlePreview = (row: Deployment & { formType?: string; templateFormKey?: string }) => {

@@ -19,11 +19,11 @@
         style="width: 180px"
         @keyup.enter="fetchDefinitions"
       />
-      <el-button type="primary" @click="fetchDefinitions">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
-    <el-table :data="definitionGroups" v-loading="loading" border stripe>
+    <el-table :data="pagedGroups" v-loading="loading" border stripe>
       <el-table-column label="流程名称" min-width="180" show-overflow-tooltip>
         <template #default="{ row }">{{ row.latest.name || row.key || '-' }}</template>
       </el-table-column>
@@ -80,6 +80,17 @@
       </el-table-column>
     </el-table>
 
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="definitionGroups.length"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
+
     <el-dialog
       v-model="versionDialogVisible"
       :title="selectedVersionGroup ? `${selectedVersionGroup.latest.name || selectedVersionGroup.key} 的版本` : '流程版本'"
@@ -110,7 +121,7 @@
         <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
             <el-button size="small" link type="primary" @click="openDefinitionViewer(row)">查看流程</el-button>
-            <el-button size="small" link type="primary" @click="openDefinitionDesigner(row)">设计</el-button>
+            <el-button size="small" link type="primary" @click="openDefinitionDesigner(row)">编辑</el-button>
             <el-button size="small" link type="primary" @click="openStartDialog(row)">启动</el-button>
             <el-button
               v-if="row.suspended"
@@ -192,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
@@ -234,6 +245,13 @@ interface ProcessDefinitionGroup {
 const definitionGroups = ref<ProcessDefinitionGroup[]>([])
 const allDefinitions = ref<ProcessDefinition[]>([])
 const deploymentMap = ref<Record<string, Deployment>>({})
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+const pagedGroups = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return definitionGroups.value.slice(start, start + pageSize.value)
+})
 const loading = ref(false)
 const versionDialogVisible = ref(false)
 const selectedVersionGroup = ref<ProcessDefinitionGroup | null>(null)
@@ -322,9 +340,15 @@ const formatDeploymentTime = (row: ProcessDefinition) => {
   return deploymentTime ? formatTableTime(null, null, deploymentTime) : '-'
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchDefinitions()
+}
+
 const resetSearch = () => {
   search.name = ''
   search.key = ''
+  currentPage.value = 1
   fetchDefinitions()
 }
 

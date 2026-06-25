@@ -1,6 +1,6 @@
 <template>
-  <div class="bpmn-viewer">
-    <div v-if="loading" class="viewer-loading">
+  <div class="bpmn-viewer" :style="props.height ? { height: props.height } : {}">
+    <div v-if="loading" class="viewer-loading" :style="props.height ? { height: props.height } : {}">
       <el-icon class="is-loading" :size="24"><Loading /></el-icon>
       <span>加载流程图中...</span>
     </div>
@@ -25,6 +25,7 @@ const props = defineProps<{
   xml: string | null
   activeActivityIds: string[]
   completedActivityIds: string[]
+  height?: string
 }>()
 
 const canvasRef = ref<HTMLDivElement>()

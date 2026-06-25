@@ -25,6 +25,24 @@ export interface ActivityStatistics {
   incidents: { incidentType: string; incidentCount: number }[]
 }
 
+export function getProcessDefinitionCount(params?: {
+  id?: string
+  idIn?: string
+  name?: string
+  nameLike?: string
+  key?: string
+  keyLike?: string
+  category?: string
+  categoryLike?: string
+  deploymentId?: string
+  version?: number
+  latestVersion?: boolean
+  suspended?: boolean
+  active?: boolean
+}) {
+  return api.get<{ count: number }>('/engine-rest/process-definition/count', { params })
+}
+
 export function getProcessDefinitions(params?: {
   id?: string
   idIn?: string

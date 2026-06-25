@@ -27,7 +27,7 @@
         style="width: 200px"
         @keyup.enter="fetchUsers"
       />
-      <el-button type="primary" @click="fetchUsers">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
@@ -48,6 +48,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="onPageSizeChange"
+        @current-change="onPageChange"
+      />
+    </div>
 
     <el-dialog
       v-model="formDialogVisible"
@@ -89,14 +102,14 @@
               placeholder="请输入邮箱"
             />
           </el-form-item>
-          <el-form-item label="密码" prop="password" class="grid-span-2">
+          <el-form-item label="密码" prop="password" class="grid-span-2" :required="!isEdit">
             <el-input
               v-model="formData.password"
               type="password"
               show-password
               :placeholder="isEdit ? '留空则不修改密码' : '请输入密码'"
             />
-            <div class="field-tip">至少 8 位，包含大小写字母和数字</div>
+            <div class="field-tip">{{ isEdit ? '留空则不修改；如填写，需为 6-64 位' : '6-64 位，不限制字符组合' }}</div>
           </el-form-item>
         </div>
       </el-form>
@@ -174,6 +187,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import {
   getUsers,
   getUser,
+  getUserCount,
   createUser,
   updateUserProfile,
   updateUserCredentials,
@@ -186,6 +200,9 @@ import { getGroups, addGroupMember, removeGroupMember, type CamundaGroup } from 
 
 const userList = ref<CamundaUser[]>([])
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
 const search = reactive({
   id: '',
@@ -196,12 +213,29 @@ const search = reactive({
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const params: Record<string, string> = {}
-    if (search.id) params.id = search.id
-    if (search.firstNameLike) params.firstNameLike = `%${search.firstNameLike}%`
-    if (search.emailLike) params.emailLike = `%${search.emailLike}%`
-    const res = await getUsers(params)
+    const params: Record<string, any> = {
+      firstResult: (currentPage.value - 1) * pageSize.value,
+      maxResults: pageSize.value
+    }
+    const countParams: Record<string, string> = {}
+    if (search.id) {
+      params.id = search.id
+      countParams.id = search.id
+    }
+    if (search.firstNameLike) {
+      params.firstNameLike = `%${search.firstNameLike}%`
+      countParams.firstNameLike = params.firstNameLike
+    }
+    if (search.emailLike) {
+      params.emailLike = `%${search.emailLike}%`
+      countParams.emailLike = params.emailLike
+    }
+    const [res, countRes] = await Promise.all([
+      getUsers(params),
+      getUserCount(countParams)
+    ])
     userList.value = res.data
+    total.value = countRes.data.count
   } catch {
     ElMessage.error('获取用户列表失败')
   } finally {
@@ -209,10 +243,25 @@ const fetchUsers = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchUsers()
+}
+
 const resetSearch = () => {
   search.id = ''
   search.firstNameLike = ''
   search.emailLike = ''
+  currentPage.value = 1
+  fetchUsers()
+}
+
+const onPageSizeChange = () => {
+  currentPage.value = 1
+  fetchUsers()
+}
+
+const onPageChange = () => {
   fetchUsers()
 }
 
@@ -228,30 +277,21 @@ const formData = reactive({
   password: ''
 })
 
+const PASSWORD_MIN_LENGTH = 6
+const PASSWORD_MAX_LENGTH = 64
+
 const passwordRule = (_rule: any, value: string, callback: any) => {
   if (isEdit.value && !value) {
     callback()
     return
   }
-  if (!isEdit.value && !value) {
+  if (!value) {
     callback(new Error('请输入密码'))
     return
   }
   if (value) {
-    if (value.length < 8) {
-      callback(new Error('密码长度至少8位'))
-      return
-    }
-    if (!/[A-Z]/.test(value)) {
-      callback(new Error('密码必须包含大写字母'))
-      return
-    }
-    if (!/[a-z]/.test(value)) {
-      callback(new Error('密码必须包含小写字母'))
-      return
-    }
-    if (!/[0-9]/.test(value)) {
-      callback(new Error('密码必须包含数字'))
+    if (value.length < PASSWORD_MIN_LENGTH || value.length > PASSWORD_MAX_LENGTH) {
+      callback(new Error(`密码长度需为 ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} 位`))
       return
     }
   }
@@ -262,7 +302,6 @@ const formRules: FormRules = {
   id: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   fullName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
   password: [{ validator: passwordRule, trigger: 'blur' }]
@@ -427,7 +466,7 @@ onMounted(() => {
 <style scoped>
 .user-list-page {
   background: #fff;
-  padding: 20px;
+  /* padding: 20px; */
   border-radius: 4px;
 }
 

@@ -28,11 +28,11 @@
         style="width: 180px"
         @keyup.enter="fetchDeployments"
       />
-      <el-button type="primary" @click="fetchDeployments">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
-    <el-table :data="deploymentList" v-loading="loading" border stripe>
+    <el-table :data="pagedDeployments" v-loading="loading" border stripe>
       <el-table-column label="资源名称" min-width="220" show-overflow-tooltip>
         <template #default="{ row }">{{ formatDeploymentResourceNames(row) }}</template>
       </el-table-column>
@@ -56,6 +56,17 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="deploymentList.length"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <el-dialog v-model="uploadDialogVisible" title="部署资源文件" width="500px" :close-on-click-modal="false">
       <el-form ref="uploadFormRef" :model="uploadForm" :rules="uploadRules" label-width="100px">
@@ -121,6 +132,13 @@ const deploymentList = ref<Deployment[]>([])
 const definitionsByDeploymentId = ref<Record<string, ProcessDefinition[]>>({})
 const loading = ref(false)
 const deploymentFilter = ref<'bpmn' | 'form' | 'all'>('bpmn')
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+const pagedDeployments = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return deploymentList.value.slice(start, start + pageSize.value)
+})
 
 const search = reactive({ name: '', source: '' })
 
@@ -228,9 +246,15 @@ const fetchDeployments = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchDeployments()
+}
+
 const resetSearch = () => {
   search.name = ''
   search.source = ''
+  currentPage.value = 1
   fetchDeployments()
 }
 

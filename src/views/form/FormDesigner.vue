@@ -45,7 +45,9 @@
 
     <div class="designer-content">
       <div v-if="formType === 'vform'" class="main-panel">
-        <v-form-designer ref="vfdRef" />
+        <div ref="vformShellRef" class="vform-designer-shell">
+          <v-form-designer ref="vfdRef" :designer-config="vformDesignerConfig" />
+        </div>
       </div>
 
       <div v-else-if="formType === 'html'" class="main-panel">
@@ -53,7 +55,7 @@
       </div>
     </div>
 
-    <el-dialog v-model="previewDialogVisible" title="表单预览" width="900px">
+    <el-dialog v-model="previewDialogVisible" title="表单预览" width="min(1400px, 96vw)" class="form-preview-dialog">
       <FormRenderer
         :template="previewTemplate"
         :form-data="previewFormData"
@@ -95,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Checked, View, Grid, Edit, CopyDocument } from '@element-plus/icons-vue'
@@ -122,11 +124,44 @@ const saveDialogVisible = ref(false)
 
 const formType = ref<FormType>('vform')
 const htmlContent = ref('')
+const vformShellRef = ref<HTMLElement | null>(null)
 const vfdRef = ref<any>(null)
 const previewRendererRef = ref<any>(null)
+let vformResizeObserver: ResizeObserver | null = null
+
+const vformDesignerConfig = {
+  formTemplates: false,
+  generateSFCButton: false
+}
 
 const previewFormJson = ref<any>({})
 const previewFormData = ref({})
+
+const getDefaultFormConfig = () => ({
+  modelName: 'formData',
+  refName: 'vForm',
+  rulesName: 'rules',
+  labelWidth: 80,
+  labelPosition: 'left',
+  size: '',
+  labelAlign: 'label-left-align',
+  cssCode: '',
+  customClass: '',
+  functions: '',
+  layoutType: 'PC',
+  jsonVersion: 3
+})
+
+const normalizeVformJson = (formJson: any) => {
+  const normalized = formJson || {}
+  normalized.widgetList = Array.isArray(normalized.widgetList) ? normalized.widgetList : []
+  normalized.formConfig = {
+    ...getDefaultFormConfig(),
+    ...(normalized.formConfig || {}),
+    layoutType: 'PC'
+  }
+  return normalized
+}
 
 const previewTemplate = computed<FormTemplate | null>(() => {
   if (formType.value === 'vform') {
@@ -169,26 +204,37 @@ const templateMeta = reactive<{
 
 const getEmptyFormJson = () => ({
   widgetList: [],
-  formConfig: {
-    modelName: 'formData',
-    refName: 'vForm',
-    rulesName: 'rules',
-    labelWidth: 80,
-    labelPosition: 'left',
-    size: '',
-    labelAlign: 'label-left-align',
-    cssCode: '',
-    customClass: '',
-    functions: '',
-    layoutType: 'PC',
-    jsonVersion: 3
-  }
+  formConfig: getDefaultFormConfig()
 })
 
 const initVformDesigner = async () => {
   await nextTick()
   if (vfdRef.value) {
     vfdRef.value.setFormJson(getEmptyFormJson())
+    updateVformScrollerHeight()
+  }
+}
+
+const updateVformScrollerHeight = async () => {
+  await nextTick()
+  const formWidgetMain = vformShellRef.value?.querySelector('.form-widget-main') as HTMLElement | null
+  if (!formWidgetMain || !vfdRef.value) return
+
+  const height = formWidgetMain.clientHeight - 16
+  if (height > 0) {
+    vfdRef.value.scrollerHeight = `${height}px`
+  }
+}
+
+const setupVformScrollerHeight = async () => {
+  await updateVformScrollerHeight()
+
+  vformResizeObserver?.disconnect()
+  if (vformShellRef.value && typeof ResizeObserver !== 'undefined') {
+    vformResizeObserver = new ResizeObserver(() => {
+      updateVformScrollerHeight()
+    })
+    vformResizeObserver.observe(vformShellRef.value)
   }
 }
 
@@ -196,11 +242,25 @@ const initNewDesigner = () => {
   templateMeta.formKey = generateFormKey(formType.value)
 }
 
+const getCleanTemplateName = (deploymentName: string) => {
+  if (deploymentName.endsWith('.form.json')) {
+    return deploymentName.slice(0, -10)
+  }
+  if (deploymentName.endsWith('.form.html')) {
+    return deploymentName.slice(0, -10)
+  }
+  if (deploymentName.endsWith('.json')) {
+    return deploymentName.slice(0, -5)
+  }
+  return deploymentName
+}
+
 const handlePreview = () => {
   if (formType.value === 'vform' && vfdRef.value) {
     try {
-      previewFormJson.value = vfdRef.value.getFormJson?.() ||
+      const formJson = vfdRef.value.getFormJson?.() ||
         vfdRef.value.exportSchema?.() || {}
+      previewFormJson.value = normalizeVformJson(formJson)
       previewDialogVisible.value = true
     } catch {
       ElMessage.error('获取表单数据失败')
@@ -258,6 +318,7 @@ const handleSubmitSave = async () => {
         ElMessage.error('无法获取表单数据，请重试')
         return
       }
+      formJson = normalizeVformJson(formJson)
       const formFileName = `${templateMeta.name}.form.json`
       const blob = new Blob([JSON.stringify(formJson)], { type: 'application/json' })
       formData.append(formFileName, blob, formFileName)
@@ -278,7 +339,6 @@ const handleSubmitSave = async () => {
     }
 
     const meta: FormMeta = {
-      formKey: '',
       formType: type,
       createdAt: new Date().toISOString()
     }
@@ -324,22 +384,15 @@ const copyFormKey = async () => {
   }
 }
 
-const loadTemplate = async (deploymentId: string) => {
+const loadTemplate = async (deploymentId: string, options: { copy?: boolean } = {}) => {
   try {
     const deploymentRes = await getDeployment(deploymentId)
     const resourcesRes = await getDeploymentResources(deploymentId)
 
-    templateMeta.id = deploymentId
+    templateMeta.id = options.copy ? undefined : deploymentId
 
-    let cleanName = deploymentRes.data.name
-    if (cleanName.endsWith('.form.json')) {
-      cleanName = cleanName.slice(0, -10)
-    } else if (cleanName.endsWith('.form.html')) {
-      cleanName = cleanName.slice(0, -10)
-    } else if (cleanName.endsWith('.json')) {
-      cleanName = cleanName.slice(0, -5)
-    }
-    templateMeta.name = cleanName
+    const cleanName = getCleanTemplateName(deploymentRes.data.name)
+    templateMeta.name = options.copy ? `${cleanName}-副本` : cleanName
 
     for (const resource of resourcesRes.data) {
       if (resource.name.endsWith('.description.txt')) {
@@ -362,13 +415,14 @@ const loadTemplate = async (deploymentId: string) => {
         try {
           const jsonRes = await getDeploymentResourceData(deploymentId, resource.id)
           const jsonText = await (jsonRes.data as Blob).text()
-          const parsed = JSON.parse(jsonText)
+          const parsed = normalizeVformJson(JSON.parse(jsonText))
           previewFormJson.value = parsed
           formType.value = 'vform'
           templateMeta.type = 'vform'
           await nextTick()
           if (vfdRef.value) {
             vfdRef.value.setFormJson(parsed)
+            updateVformScrollerHeight()
           }
         } catch { /* ignore */ }
       }
@@ -382,9 +436,11 @@ const loadTemplate = async (deploymentId: string) => {
       }
     }
 
-    templateMeta.formKey = buildFormKey(templateMeta.type, deploymentId)
-    isEdit.value = true
-    ElMessage.success('模板加载成功')
+    templateMeta.formKey = options.copy
+      ? generateFormKey(templateMeta.type)
+      : buildFormKey(templateMeta.type, deploymentId)
+    isEdit.value = !options.copy
+    ElMessage.success(options.copy ? '已复制模板，请保存为新模板' : '模板加载成功')
   } catch (error) {
     console.error('加载模板失败:', error)
     ElMessage.error('加载模板失败')
@@ -393,13 +449,24 @@ const loadTemplate = async (deploymentId: string) => {
 
 onMounted(async () => {
   const templateId = route.query.id as string
+  const copyFrom = route.query.copyFrom as string
   if (templateId) {
     await loadTemplate(templateId)
+  } else if (copyFrom) {
+    await loadTemplate(copyFrom, { copy: true })
   } else {
     formType.value = 'vform'
     initNewDesigner()
     await initVformDesigner()
   }
+
+  await setupVformScrollerHeight()
+  window.addEventListener('resize', updateVformScrollerHeight)
+})
+
+onBeforeUnmount(() => {
+  vformResizeObserver?.disconnect()
+  window.removeEventListener('resize', updateVformScrollerHeight)
 })
 </script>
 
@@ -477,6 +544,27 @@ onMounted(async () => {
 .main-panel {
   height: 100%;
   overflow: auto;
+}
+
+.vform-designer-shell {
+  height: 100%;
+  overflow: hidden !important;
+}
+
+.vform-designer-shell :deep(.container-scroll-bar .el-scrollbar__view) {
+  padding-bottom: 160px;
+}
+
+.vform-designer-shell :deep(.form-widget-container > .el-form.full-height-width > .form-widget-list) {
+  padding-bottom: 160px !important;
+}
+
+.vform-designer-shell :deep(.toolbar-container .left-toolbar > .el-button-group[style*="margin-left"]) {
+  display: none !important;
+}
+
+.vform-designer-shell :deep(.panel-container > .el-tabs > .el-tabs__content > .el-tab-pane:nth-child(2) .setting-form .setting-collapse > .el-collapse-item:first-child .el-collapse-item__content > .el-form-item:nth-last-of-type(-n + 4)) {
+  display: none !important;
 }
 
 .form-tip {

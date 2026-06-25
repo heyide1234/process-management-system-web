@@ -41,9 +41,11 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getUser, updateUserProfile, updateUserCredentials } from '../api/user'
+import { useAuthStore } from '../stores/auth'
 
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
+const authStore = useAuthStore()
 
 const formData = reactive({
   id: '',
@@ -52,25 +54,16 @@ const formData = reactive({
   password: ''
 })
 
+const PASSWORD_MIN_LENGTH = 6
+const PASSWORD_MAX_LENGTH = 64
+
 const passwordRule = (_rule: any, value: string, callback: any) => {
   if (!value) {
     callback()
     return
   }
-  if (value.length < 8) {
-    callback(new Error('密码长度至少8位'))
-    return
-  }
-  if (!/[A-Z]/.test(value)) {
-    callback(new Error('密码必须包含大写字母'))
-    return
-  }
-  if (!/[a-z]/.test(value)) {
-    callback(new Error('密码必须包含小写字母'))
-    return
-  }
-  if (!/[0-9]/.test(value)) {
-    callback(new Error('密码必须包含数字'))
+  if (value.length < PASSWORD_MIN_LENGTH || value.length > PASSWORD_MAX_LENGTH) {
+    callback(new Error(`密码长度需为 ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} 位`))
     return
   }
   callback()
@@ -86,7 +79,7 @@ const formRules: FormRules = {
 }
 
 const fetchProfile = async () => {
-  const userId = localStorage.getItem('username')
+  const userId = authStore.username
   if (!userId) return
   try {
     const res = await getUser(userId)

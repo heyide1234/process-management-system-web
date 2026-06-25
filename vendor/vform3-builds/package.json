@@ -1,0 +1,15 @@
+{
+  "name": "vform3-builds",
+  "version": "3.0.10-official.20260604",
+  "private": true,
+  "main": "dist/designer.umd.js",
+  "module": "dist/designer.es.js",
+  "description": "Local official VForm 3 build from vform666/variant-form3-vite.",
+  "homepage": "https://github.com/vform666/variant-form3-vite",
+  "files": [
+    "dist",
+    "README.md",
+    "license.txt",
+    "SOURCE.md"
+  ]
+}

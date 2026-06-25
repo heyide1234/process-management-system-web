@@ -10,7 +10,7 @@
       <el-select v-model="search.resourceType" placeholder="资源类型" clearable style="width: 160px" @change="fetchData">
         <el-option v-for="o in RESOURCE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
       </el-select>
-      <el-button type="primary" @click="fetchData">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
@@ -129,6 +129,19 @@
       <el-empty v-else description="暂无授权数据" />
     </div>
 
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="onPageSizeChange"
+        @current-change="onPageChange"
+      />
+    </div>
+
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑授权' : '新增授权'" width="520px" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
         <el-form-item label="授权对象" prop="subjectType">
@@ -172,6 +185,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
   getAuthorizations,
+  getAuthorizationCount,
   createAuthorization,
   updateAuthorization,
   deleteAuthorization,
@@ -186,6 +200,9 @@ import {
 
 const list = ref<AuthorizationDto[]>([])
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 type SubjectType = 'group' | 'user' | 'global'
 type SubjectFilter = SubjectType | 'all'
 
@@ -312,14 +329,27 @@ const formatResourceId = (resourceId: string | null) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const params: AuthorizationQueryParams = {}
-    if (search.resourceType !== undefined) params.resourceType = search.resourceType
+    const params: AuthorizationQueryParams = {
+      firstResult: (currentPage.value - 1) * pageSize.value,
+      maxResults: pageSize.value
+    }
+    const countParams: AuthorizationQueryParams = {}
+    if (search.resourceType !== undefined) {
+      params.resourceType = search.resourceType
+      countParams.resourceType = search.resourceType
+    }
     if (search.userOrGroup) {
       params.userIdIn = search.userOrGroup
       params.groupIdIn = search.userOrGroup
+      countParams.userIdIn = search.userOrGroup
+      countParams.groupIdIn = search.userOrGroup
     }
-    const res = await getAuthorizations(params)
+    const [res, countRes] = await Promise.all([
+      getAuthorizations(params),
+      getAuthorizationCount(countParams)
+    ])
     list.value = res.data
+    total.value = countRes.data.count
   } catch {
     ElMessage.error('获取权限列表失败')
   } finally {
@@ -327,9 +357,24 @@ const fetchData = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchData()
+}
+
 const resetSearch = () => {
   search.userOrGroup = ''
   search.resourceType = undefined
+  currentPage.value = 1
+  fetchData()
+}
+
+const onPageSizeChange = () => {
+  currentPage.value = 1
+  fetchData()
+}
+
+const onPageChange = () => {
   fetchData()
 }
 

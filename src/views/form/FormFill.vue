@@ -19,7 +19,7 @@
       </div>
     </div>
 
-    <div class="form-container">
+    <div class="form-fill-container">
       <FormRenderer
         :template="template"
         :form-data="initialFormData"
@@ -301,7 +301,8 @@ onMounted(() => {
 
 <style scoped>
 .form-fill-page {
-  padding: 20px;
+  padding: 0;
+  margin: -8px -16px 0;
 }
 
 .page-header {
@@ -333,11 +334,14 @@ onMounted(() => {
   margin-top: 6px;
 }
 
-.form-container {
+.form-fill-container {
   background: #fff;
-  padding: 24px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: none;
+  overflow-x: auto;
 }
 
 .form-actions {
@@ -347,5 +351,11 @@ onMounted(() => {
   padding-top: 24px;
   border-top: 1px solid #eee;
   margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .form-fill-page {
+    margin: 0;
+  }
 }
 </style>

@@ -30,7 +30,7 @@
         <el-option label="SYSTEM" value="SYSTEM" />
         <el-option label="camunda-admin" value="camunda-admin" />
       </el-select>
-      <el-button type="primary" @click="fetchGroups">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
@@ -46,6 +46,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="onPageSizeChange"
+        @current-change="onPageChange"
+      />
+    </div>
 
     <el-dialog
       v-model="formDialogVisible"
@@ -158,6 +171,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import {
   getGroups,
   getGroup,
+  getGroupCount,
   createGroup,
   updateGroup,
   deleteGroup,
@@ -170,6 +184,9 @@ import { getUsers, type CamundaUser } from '../../api/user'
 
 const groupList = ref<CamundaGroup[]>([])
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
 const search = reactive({
   id: '',
@@ -180,12 +197,29 @@ const search = reactive({
 const fetchGroups = async () => {
   loading.value = true
   try {
-    const params: Record<string, string> = {}
-    if (search.id) params.id = search.id
-    if (search.name) params.name = `%${search.name}%`
-    if (search.type) params.type = search.type
-    const res = await getGroups(params)
+    const params: Record<string, any> = {
+      firstResult: (currentPage.value - 1) * pageSize.value,
+      maxResults: pageSize.value
+    }
+    const countParams: Record<string, string> = {}
+    if (search.id) {
+      params.id = search.id
+      countParams.id = search.id
+    }
+    if (search.name) {
+      params.name = `%${search.name}%`
+      countParams.name = params.name
+    }
+    if (search.type) {
+      params.type = search.type
+      countParams.type = search.type
+    }
+    const [res, countRes] = await Promise.all([
+      getGroups(params),
+      getGroupCount(countParams)
+    ])
     groupList.value = res.data
+    total.value = countRes.data.count
   } catch {
     ElMessage.error('获取组列表失败')
   } finally {
@@ -193,10 +227,25 @@ const fetchGroups = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchGroups()
+}
+
 const resetSearch = () => {
   search.id = ''
   search.name = ''
   search.type = ''
+  currentPage.value = 1
+  fetchGroups()
+}
+
+const onPageSizeChange = () => {
+  currentPage.value = 1
+  fetchGroups()
+}
+
+const onPageChange = () => {
   fetchGroups()
 }
 

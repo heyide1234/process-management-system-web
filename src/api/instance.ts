@@ -45,12 +45,12 @@ export interface ProcessInstanceQueryParams {
   maxResults?: number
 }
 
-export function getProcessInstances(params?: ProcessInstanceQueryParams) {
-  return api.get<ProcessInstance[]>('/engine-rest/process-instance', { params })
-}
-
 export function getProcessInstanceCount(params?: ProcessInstanceQueryParams) {
   return api.get<{ count: number }>('/engine-rest/process-instance/count', { params })
+}
+
+export function getProcessInstances(params?: ProcessInstanceQueryParams) {
+  return api.get<ProcessInstance[]>('/engine-rest/process-instance', { params })
 }
 
 export function getProcessInstance(id: string) {
@@ -70,7 +70,7 @@ export function activateProcessInstance(id: string) {
 }
 
 export function getActivityInstances(id: string) {
-  return api.get<{ [key: string]: ActivityInstance }>(
+  return api.get<ActivityInstance>(
     '/engine-rest/process-instance/' + id + '/activity-instances'
   )
 }

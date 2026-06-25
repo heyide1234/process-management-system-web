@@ -14,10 +14,20 @@ export interface CamundaUserProfile {
   email: string
 }
 
+export function getUserCount(params?: {
+  id?: string
+  firstNameLike?: string
+  emailLike?: string
+}) {
+  return api.get<{ count: number }>('/engine-rest/user/count', { params })
+}
+
 export function getUsers(params?: {
   id?: string
   firstNameLike?: string
   emailLike?: string
+  firstResult?: number
+  maxResults?: number
 }) {
   return api.get<CamundaUser[]>('/engine-rest/user', { params })
 }

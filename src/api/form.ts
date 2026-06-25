@@ -14,7 +14,7 @@ export interface FormKeyInfo {
 }
 
 export interface FormMeta {
-  formKey: string
+  formKey?: string
   formType: FormType
   createdAt?: string
   processDefinitionKey?: string

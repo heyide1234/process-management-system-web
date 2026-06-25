@@ -7,10 +7,20 @@ export interface CamundaGroup {
   type: string
 }
 
+export function getGroupCount(params?: {
+  id?: string
+  name?: string
+  type?: string
+}) {
+  return api.get<{ count: number }>('/engine-rest/group/count', { params })
+}
+
 export function getGroups(params?: {
   id?: string
   name?: string
   type?: string
+  firstResult?: number
+  maxResults?: number
 }) {
   return api.get<CamundaGroup[]>('/engine-rest/group', { params })
 }

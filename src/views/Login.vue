@@ -5,7 +5,7 @@
         <span class="star-icon">
           <img :src="loginBg" class="logo-img" alt="" style="width: 100%; height: 100%;" />
         </span>
-        <h2>机务流程系统</h2>
+        <h2>空军九十八旅机务流程系统</h2>
       </div>
       <el-form ref="formRef" :model="loginForm" :rules="rules" @keyup.enter="handleLogin" class="login-form">
         <el-form-item prop="username">
@@ -43,9 +43,11 @@ import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '../api/auth'
+import { useAuthStore } from '../stores/auth'
 import loginBg from '../styles/切图/1 1@2x.png'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const errorMsg = ref('')
@@ -68,8 +70,7 @@ const handleLogin = async () => {
   errorMsg.value = ''
   try {
     const res = await login(loginForm.username, loginForm.password)
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('username', res.data.username)
+    authStore.login(res.data.token, res.data.username)
     router.push('/')
   } catch {
     errorMsg.value = '用户名或密码错误'

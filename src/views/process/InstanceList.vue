@@ -30,13 +30,16 @@
         <el-option label="运行中" :value="true" />
         <el-option label="已挂起" :value="false" />
       </el-select>
-      <el-button type="primary" @click="fetchInstances">搜索</el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
     <el-table :data="instanceList" v-loading="loading" border stripe>
       <el-table-column label="流程名称" min-width="180" show-overflow-tooltip>
         <template #default="{ row }">{{ getDefinitionName(row.definitionId) }}</template>
+      </el-table-column>
+      <el-table-column label="启动时间" min-width="170">
+        <template #default="{ row }">{{ formatTableTime(null, null, historicMap[row.id]?.startTime) || '-' }}</template>
       </el-table-column>
       <el-table-column label="流程Key / 版本" min-width="160" show-overflow-tooltip>
         <template #default="{ row }">{{ getDefinitionKeyVersion(row.definitionId) }}</template>
@@ -56,7 +59,6 @@
         </template>
       </el-table-column>
       <el-table-column prop="id" label="实例ID" min-width="220" show-overflow-tooltip />
-      <el-table-column prop="definitionId" label="定义ID" min-width="220" show-overflow-tooltip />
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button size="small" link type="primary" @click="openDetailDialog(row.id)">详情</el-button>
@@ -83,6 +85,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="onPageSizeChange"
+        @current-change="onPageChange"
+      />
+    </div>
+
     <el-dialog v-model="detailDialogVisible" title="实例详情" width="900px">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="实例ID" :span="2">{{ detail?.id }}</el-descriptions-item>
@@ -99,7 +114,13 @@
         </el-descriptions-item>
       </el-descriptions>
 
-      <h4 style="margin-top: 20px">流程进度</h4>
+      <div class="diagram-header" style="margin-top: 20px">
+        <h4 style="margin: 0">流程进度</h4>
+        <el-button size="small" link type="primary" @click="fullscreenDiagramVisible = true" :disabled="!processXml">
+          <el-icon><FullScreen /></el-icon>
+          放大查看
+        </el-button>
+      </div>
       <BpmnViewer
         :xml="processXml"
         :active-activity-ids="activeActivityIds"
@@ -108,21 +129,39 @@
 
       <h4 style="margin-top: 20px">{{ detail?.ended ? '历史活动节点' : '当前活动节点' }}</h4>
       <el-table :data="activityList" v-loading="activityLoading" border stripe>
-        <el-table-column prop="activityId" label="节点ID" min-width="180" />
         <el-table-column prop="activityName" label="节点名称" min-width="150" />
+        <el-table-column prop="activityId" label="节点ID" min-width="180" />
         <el-table-column prop="activityType" label="节点类型" min-width="160" />
+        <el-table-column v-if="!detail?.ended" label="执行人" min-width="120">
+          <template #default="{ row }">
+            <template v-if="row.activityType === 'userTask'">
+              <el-tag v-if="taskAssigneeMap[row.activityId]" size="small">{{ taskAssigneeMap[row.activityId] }}</el-tag>
+              <el-tag v-else size="small" type="warning">待认领</el-tag>
+            </template>
+            <template v-else>-</template>
+          </template>
+        </el-table-column>
         <el-table-column v-if="detail?.ended" prop="endTime" label="完成时间" min-width="160" :formatter="formatTableTime" />
         <el-table-column v-if="!detail?.ended" prop="incidentIdsCount" label="异常数" width="80" align="center" />
       </el-table>
+    </el-dialog>
 
-      <h4 style="margin-top: 20px">流程变量</h4>
-      <el-table :data="variableList" v-loading="varLoading" border stripe>
-        <el-table-column prop="name" label="变量名" min-width="180" />
-        <el-table-column prop="type" label="类型" min-width="100" />
-        <el-table-column label="值" min-width="200">
-          <template #default="{ row }">{{ JSON.stringify(row.value) }}</template>
-        </el-table-column>
-      </el-table>
+    <el-dialog
+      v-model="fullscreenDiagramVisible"
+      title="流程进度"
+      width="95vw"
+      top="2vh"
+      :close-on-click-modal="false"
+      @opened="onFullscreenDiagramOpened"
+    >
+      <BpmnViewer
+        v-if="fullscreenDiagramVisible"
+        :key="'fullscreen-' + (detail?.id || '')"
+        :xml="processXml"
+        :active-activity-ids="activeActivityIds"
+        :completed-activity-ids="completedActivityIds"
+        height="75vh"
+      />
     </el-dialog>
   </div>
 </template>
@@ -130,25 +169,31 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { FullScreen } from '@element-plus/icons-vue'
 import {
   getProcessInstances,
+  getProcessInstanceCount,
   getProcessInstance,
   deleteProcessInstance,
   suspendProcessInstance,
   activateProcessInstance,
   getActivityInstances,
-  getInstanceVariables,
   type ProcessInstance
 } from '../../api/instance'
-import { getHistoricActivityInstances } from '../../api/history'
+import { getHistoricActivityInstances, getHistoricProcessInstances } from '../../api/history'
 import { getProcessDefinitions, getProcessDefinitionXml, type ProcessDefinition } from '../../api/processDefinition'
+import { getTasks } from '../../api/task'
 import BpmnViewer from '../../components/BpmnViewer.vue'
 import { formatTableTime } from '../../utils/format'
 
 const instanceList = ref<ProcessInstance[]>([])
 const definitionMap = ref<Record<string, ProcessDefinition>>({})
 const currentActivityMap = ref<Record<string, string>>({})
+const historicMap = ref<Record<string, { startUserId: string | null; startTime: string }>>({})
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
 const search = reactive({
   processDefinitionKey: '',
@@ -160,24 +205,59 @@ const search = reactive({
 const fetchInstances = async () => {
   loading.value = true
   try {
-    const params: Record<string, any> = {}
-    if (search.processDefinitionKey) params.processDefinitionKey = search.processDefinitionKey
-    if (search.processDefinitionId) params.processDefinitionId = search.processDefinitionId
-    if (search.businessKey) params.businessKeyLike = '%' + search.businessKey + '%'
+    const params: Record<string, any> = {
+      sortBy: 'instanceId',
+      sortOrder: 'desc',
+      firstResult: (currentPage.value - 1) * pageSize.value,
+      maxResults: pageSize.value
+    }
+    const countParams: Record<string, any> = {}
+    if (search.processDefinitionKey) {
+      params.processDefinitionKey = search.processDefinitionKey
+      countParams.processDefinitionKey = search.processDefinitionKey
+    }
+    if (search.processDefinitionId) {
+      params.processDefinitionId = search.processDefinitionId
+      countParams.processDefinitionId = search.processDefinitionId
+    }
+    if (search.businessKey) {
+      params.businessKeyLike = '%' + search.businessKey + '%'
+      countParams.businessKeyLike = params.businessKeyLike
+    }
     if (search.active !== undefined) {
       if (search.active) {
         params.active = true
+        countParams.active = true
       } else {
         params.suspended = true
+        countParams.suspended = true
       }
     }
-    const [res, definitionRes] = await Promise.all([
+    const [res, definitionRes, countRes] = await Promise.all([
       getProcessInstances(params),
-      getProcessDefinitions()
+      getProcessDefinitions(),
+      getProcessInstanceCount(countParams)
     ])
     definitionMap.value = Object.fromEntries(definitionRes.data.map((definition) => [definition.id, definition]))
     instanceList.value = res.data
+    total.value = countRes.data.count
+
+    const [historicPromise] = [res.data.length > 0
+      ? getHistoricProcessInstances({ processInstanceIds: res.data.map((i) => i.id).join(','), maxResults: Math.max(res.data.length, 100) })
+      : Promise.resolve({ data: [] as any[] })]
+
     await loadCurrentActivities(res.data)
+
+    try {
+      const historicRes = await historicPromise
+      const map: Record<string, { startUserId: string | null; startTime: string }> = {}
+      historicRes.data.forEach((h: any) => {
+        map[h.id] = { startUserId: h.startUserId, startTime: h.startTime }
+      })
+      historicMap.value = map
+    } catch (e) {
+      console.error('获取历史流程实例失败:', e)
+    }
   } catch {
     ElMessage.error('获取流程实例失败')
   } finally {
@@ -185,11 +265,26 @@ const fetchInstances = async () => {
   }
 }
 
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchInstances()
+}
+
 const resetSearch = () => {
   search.processDefinitionKey = ''
   search.processDefinitionId = ''
   search.businessKey = ''
   search.active = undefined
+  currentPage.value = 1
+  fetchInstances()
+}
+
+const onPageSizeChange = () => {
+  currentPage.value = 1
+  fetchInstances()
+}
+
+const onPageChange = () => {
   fetchInstances()
 }
 
@@ -213,7 +308,7 @@ const loadCurrentActivities = async (instances: ProcessInstance[]) => {
   const entries = await Promise.all(activeInstances.map(async (instance) => {
     try {
       const res = await getActivityInstances(instance.id)
-      const root = res.data[instance.id]
+      const root = res.data
       if (!root) return [instance.id, '-'] as const
       const leaves = collectLeafActivities([root])
       const label = leaves
@@ -261,12 +356,12 @@ const handleDelete = async (row: ProcessInstance) => {
 }
 
 const detailDialogVisible = ref(false)
+const fullscreenDiagramVisible = ref(false)
 const detail = ref<ProcessInstance | null>(null)
 const activityList = ref<any[]>([])
 const activityLoading = ref(false)
-const variableList = ref<{ name: string; value: any; type: string }[]>([])
-const varLoading = ref(false)
 const processXml = ref('')
+const taskAssigneeMap = ref<Record<string, string | null>>({})
 const activeActivityIds = ref<string[]>([])
 const completedActivityIds = ref<string[]>([])
 
@@ -299,7 +394,7 @@ const openDetailDialog = async (id: string) => {
   activeActivityIds.value = []
   completedActivityIds.value = []
   activityList.value = []
-  variableList.value = []
+  taskAssigneeMap.value = {}
 
   try {
     const res = await getProcessInstance(id)
@@ -312,7 +407,7 @@ const openDetailDialog = async (id: string) => {
   try {
     if (detail.value && !detail.value.ended) {
       const res = await getActivityInstances(id)
-      const root = res.data[id]
+      const root = res.data
       if (root) {
         const allFlat = flattenActivities([root])
         activityList.value = allFlat
@@ -322,6 +417,16 @@ const openDetailDialog = async (id: string) => {
           !leaves.some((l: any) => l.id === a.id)
         )
         completedActivityIds.value = parents.map((a: any) => a.activityId)
+        try {
+          const taskRes = await getTasks({ processInstanceId: id, maxResults: 200 })
+          const map: Record<string, string | null> = {}
+          taskRes.data.forEach((t) => {
+            map[t.taskDefinitionKey] = t.assignee
+          })
+          taskAssigneeMap.value = map
+        } catch {
+          // ignore
+        }
       }
     } else if (detail.value) {
       const res = await getHistoricActivityInstances({
@@ -342,20 +447,6 @@ const openDetailDialog = async (id: string) => {
     activityLoading.value = false
   }
 
-  varLoading.value = true
-  try {
-    const res = await getInstanceVariables(id)
-    variableList.value = Object.entries(res.data).map(([name, val]) => ({
-      name,
-      value: val.value,
-      type: val.type
-    }))
-  } catch {
-    // ignore
-  } finally {
-    varLoading.value = false
-  }
-
   if (detail.value?.definitionId) {
     try {
       const xmlRes = await getProcessDefinitionXml(detail.value.definitionId)
@@ -364,6 +455,10 @@ const openDetailDialog = async (id: string) => {
       // xml load failed, diagram won't show
     }
   }
+}
+
+const onFullscreenDiagramOpened = () => {
+  // BpmnViewer 组件在挂载时会自动渲染，无需额外处理
 }
 
 onMounted(() => {
@@ -414,5 +509,18 @@ onMounted(() => {
 h4 {
   margin: 0 0 10px;
   color: #303133;
+}
+
+.diagram-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

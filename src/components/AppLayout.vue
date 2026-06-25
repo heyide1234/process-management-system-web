@@ -1,21 +1,22 @@
 <template>
   <el-container class="app-layout">
-    <el-aside :width="isCollapse ? '64px' : '220px'" class="app-aside">
+    <el-aside :width="isCollapse ? '100px' : '332px'" :class="['app-aside', { 'is-collapsed': isCollapse }]">
       <div class="logo">
         <div class="logo-icon">
           <img :src="logoIcon" class="logo-img" alt="" />
         </div>
-        <h2 style="margin-left: 10px;" v-if="!isCollapse">机务流程系统</h2>
+        <h2 v-if="!isCollapse" style="font-family: 'Source Han Sans SC';font-size: 20px;">空军九十八旅机务流程系统</h2>
       </div>
       <el-menu
         :default-active="activeMenu"
         :collapse="isCollapse"
         :collapse-transition="false"
-        router
+        @select="handleMenuSelect"
         class="sidebar-menu"
         background-color="transparent"
         text-color="rgba(255,255,255,0.8)"
-        active-text-color="#FFD86b"
+        active-text-color="#FFFFFF"
+        
       >
         <el-menu-item index="/dashboard">
           <img :src="menuDashboard" class="menu-icon" alt="" />
@@ -24,6 +25,7 @@
 
         <el-menu-item index="/tasks/my">
           <img :src="menuMyTask" class="menu-icon" alt="" />
+
           <template #title>我的待办</template>
         </el-menu-item>
 
@@ -99,7 +101,8 @@
           <div class="breadcrumb-area" >
             <el-breadcrumb separator="›">
               <el-breadcrumb-item>
-                <el-icon><HomeFilled /></el-icon>
+                <img src="../assets/dashboard2 _icon.png" style="width: 18px;height: 18px;">
+                <!-- <el-icon><HomeFilled /></el-icon> -->
               </el-breadcrumb-item>
               <el-breadcrumb-item>
                 <span style="font-family: 'PingFang SC-Medium';">{{ currentPageName }}</span>
@@ -159,29 +162,31 @@ import {
   Expand,
   HomeFilled
 } from '@element-plus/icons-vue'
+import { useAuthStore } from '../stores/auth'
 
 import logoIcon from '../styles/切图/1 1@2x.png'
-import menuDashboard from '../styles/切图/菜单图标 - 仪表盘@2x.png'
-import menuMyTask from '../styles/切图/菜单图标 - 我的待办@2x.png'
-import menuProcessMgmt from '../styles/切图/菜单图标 - 流程管理@2x.png'
+import menuDashboard from '@/assets/dashboard_icon.png'
+import menuMyTask from '../assets/unFinal.png'
+import menuProcessMgmt from '../assets/line.png'
 import menuProcessDefinition from '../styles/切图/菜单图标 - 流程定义@2x.png'
 import menuProcessInstance from '../styles/切图/菜单图标 - 流程实例@2x.png'
 import menuProcessDeployment from '../styles/切图/菜单图标 - 流程部署@2x.png'
 import menuProcessDesigner from '../styles/切图/菜单图标 - 流程设计@2x.png'
-import menuUserMgmt from '../styles/切图/菜单图标 - 用户管理@2x.png'
+import menuUserMgmt from '../assets/userManage.png'
 import menuUserList from '../styles/切图/菜单图标 - 用户列表@2x.png'
 import menuGroupList from '../styles/切图/菜单图标 - 组列表@2x.png'
 import menuAuthMgmt from '../styles/切图/菜单图标 - 权限管理@2x.png'
-import menuFormMgmt from '../styles/切图/菜单图标 - 表单管理@2x.png'
+import menuFormMgmt from '../assets/Form.png'
 import menuTemplateMgmt from '../styles/切图/菜单图标 - 模板管理@2x.png'
 import menuFormDesigner from '../styles/切图/菜单图标 - 表单设计@2x.png'
 import menuFormRecord from '../styles/切图/Frame@2x.png'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 
 const isCollapse = ref(false)
-const username = ref(localStorage.getItem('username') || '')
+const username = computed(() => authStore.username)
 
 const activeMenu = computed(() => route.path)
 
@@ -216,12 +221,16 @@ const toggleCollapse = () => {
   isCollapse.value = !isCollapse.value
 }
 
+const handleMenuSelect = (index: string) => {
+  if (!index.startsWith('/') || index === route.path) return
+  router.push(index)
+}
+
 const handleCommand = (command: string) => {
   if (command === 'profile') {
     router.push('/profile')
   } else if (command === 'logout') {
-    localStorage.removeItem('token')
-    localStorage.removeItem('username')
+    authStore.logout()
     router.push('/login')
   }
 }
@@ -233,7 +242,7 @@ const handleCommand = (command: string) => {
 }
 
 .app-aside {
-  background: #4285F4;;
+  background: url('../assets/mideel_bk.png') no-repeat center center / cover;
   overflow-y: auto;
   overflow-x: hidden;
   transition: width 0.3s;
@@ -252,10 +261,16 @@ const handleCommand = (command: string) => {
   height: 64px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-start;
+  padding: 0 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-family: 'PingFang SC-Medium';
+  gap: 10px;
+}
+
+.app-aside.is-collapsed .logo {
+  justify-content: center;
+  padding: 0;
 }
 
 .logo-icon {
@@ -273,8 +288,8 @@ const handleCommand = (command: string) => {
 
 .logo h2 {
   color: #FFFFFF;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   margin: 0;
   white-space: nowrap;
 }
@@ -320,6 +335,9 @@ const handleCommand = (command: string) => {
 
 .breadcrumb-area :deep(.el-breadcrumb__inner) {
   color: #6B7280;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .breadcrumb-area :deep(.el-breadcrumb__inner.is-link) {
@@ -409,7 +427,7 @@ const handleCommand = (command: string) => {
 
 .app-main {
   background: #F8FAFC;
-  padding: 24px;
+  padding: 0 20px 20px 20px;
   overflow-y: auto;
 }
 </style>
@@ -420,68 +438,67 @@ const handleCommand = (command: string) => {
   border-right: none !important;
   background: transparent !important;
   padding: 12px 0;
+  font-family: 'Source Han Sans SC';
+  font-size: 16px;
+  color: #fff !important;
 }
 
 .sidebar-menu:not(.el-menu--collapse) {
-  width: 220px !important;
+  /* width: 220px !important; */
+  width: 100% !important;
+
 }
 
 /* ===== 菜单项与子菜单标题 ===== */
 .sidebar-menu .el-menu-item,
 .sidebar-menu .el-sub-menu__title {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: #FFFFFF !important;
   height: 44px !important;
   line-height: 44px !important;
-  margin: 2px 0 !important;
-  border-radius: 0 !important;
+  margin: 4px 12px !important;
+  border-radius: 8px !important;
 }
 
 .sidebar-menu .el-menu-item:hover,
 .sidebar-menu .el-sub-menu__title:hover {
-  background: rgba(0, 0, 0, 0.2) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
   color: #FFFFFF !important;
 }
 
-/* ===== 选中菜单项（黄色） ===== */
+/* ===== 选中菜单项 ===== */
 .sidebar-menu .el-menu-item.is-active {
-  background: rgba(0, 0, 0, 0.35) !important;
-  color: #FFD86b !important;
-}
-
-.sidebar-menu .el-menu-item.is-active .menu-icon {
-  filter: sepia(100%) saturate(2500%) hue-rotate(-20deg) brightness(110%) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 /* ===== 子菜单内选中项 ===== */
 .sidebar-menu .el-sub-menu .el-menu-item.is-active {
-  background: rgba(0, 0, 0, 0.35) !important;
-  color: #FFD86b !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  font-size: 16px;
+  font-weight: 500;
 }
 
-.sidebar-menu .el-sub-menu .el-menu-item.is-active .menu-icon {
-  filter: sepia(100%) saturate(2500%) hue-rotate(-20deg) brightness(110%) !important;
-}
-
-/* ===== 当前活跃子菜单的父标题变黄 ===== */
+/* ===== 当前活跃子菜单的父标题 ===== */
 .sidebar-menu .el-sub-menu.sub-active > .el-sub-menu__title {
-  color: #FFD86b !important;
-}
-
-.sidebar-menu .el-sub-menu.sub-active > .el-sub-menu__title .menu-icon {
-  filter: sepia(100%) saturate(2500%) hue-rotate(-20deg) brightness(110%) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+  font-weight: 500;
 }
 
 /* ===== focus ===== */
 .sidebar-menu .el-menu-item:focus,
 .sidebar-menu .el-sub-menu__title:focus {
-  background: rgba(0, 0, 0, 0.2) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
   color: #FFFFFF !important;
   outline: none !important;
 }
 
 .sidebar-menu .el-menu-item.is-active:focus,
 .sidebar-menu .el-sub-menu.is-active > .el-sub-menu__title:focus {
-  color: #FFD86b !important;
+  color: #FFFFFF !important;
 }
 
 /* ===== 图标 ===== */
@@ -493,7 +510,49 @@ const handleCommand = (command: string) => {
 }
 
 .sidebar-menu.el-menu--collapse .menu-icon {
-  margin-right: 0;
+  margin: 0 !important;
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 折叠时隐藏子菜单箭头 */
+.sidebar-menu.el-menu--collapse .el-sub-menu__icon-arrow {
+  display: none !important;
+}
+
+/* ===== 折叠状态下菜单项居中 ===== */
+.sidebar-menu.el-menu--collapse {
+  width: 100% !important;
+}
+
+.sidebar-menu.el-menu--collapse .el-menu-item,
+.sidebar-menu.el-menu--collapse .el-sub-menu__title {
+  margin: 4px auto !important;
+  padding: 0 !important;
+  width: 52px !important;
+  min-width: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  text-align: center !important;
+}
+
+.sidebar-menu.el-menu--collapse .el-sub-menu.is-active .el-sub-menu__title {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ===== 折叠状态下 tooltip 触发器居中 ===== */
+.sidebar-menu.el-menu--collapse .el-menu-tooltip__trigger {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
 }
 
 /* ===== 子菜单缩进 ===== */
@@ -507,5 +566,27 @@ const handleCommand = (command: string) => {
 
 .sidebar-menu.el-menu--collapse .el-sub-menu .el-menu-item {
   padding-left: 20px !important;
+}
+
+/* ===== 折叠状态下弹出的二级菜单文字为黑色 ===== */
+.el-menu--popup-container .el-menu-item,
+.el-menu--popup-container .el-sub-menu__title {
+  color: #000000 !important;
+}
+
+.el-menu--popup-container .el-menu-item:hover,
+.el-menu--popup-container .el-sub-menu__title:hover,
+.el-menu--popup-container .el-menu-item.is-active {
+  color: #000000 !important;
+  background-color: #F3F4F6 !important;
+}
+
+.el-menu--popup-container .el-sub-menu__icon-arrow {
+  color: #000000 !important;
+}
+
+/* 折叠弹出的二级菜单图标变黑 */
+.el-menu--popup-container .menu-icon {
+  filter: brightness(0) !important;
 }
 </style>

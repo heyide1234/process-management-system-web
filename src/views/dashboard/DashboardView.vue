@@ -1,81 +1,240 @@
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
-      <h2 style="font-family: 'PingFang SC-Semibold';">仪表盘</h2>
+      <!-- <h2 style="font-family: 'PingFang SC-Semibold';">仪表盘</h2> -->
     </div>
 
     <div class="dashboard-section">
-      <h3 class="section-title">运行时状态</h3>
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-icon metric-icon-blue">
-            <img :src="iconRunning" class="icon-img" alt="" />
+      <div class="overview-grid">
+        <div class="overview-card">
+          <div class="overview-top">
+            <span class="overview-period">较昨日</span>
+            <span class="overview-trend up">+8</span>
           </div>
-          <div class="metric-body">
-            <div class="metric-label">运行中流程实例</div>
-            <div class="metric-value">{{ metrics.runningProcessInstances }}</div>
+          <div class="overview-main">
+            <div class="overview-icon icon-blue">
+              <img src="../../assets/online_ icon.png" style="width: 48px;height: 48px;">
+              <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg> -->
+            </div>
+            <div class="overview-content">
+              <div class="overview-label">在修工单</div>
+              <div class="overview-value">47</div>
+            </div>
           </div>
-          <img :src="bgRunning" class="bg-illustration" alt="" />
         </div>
 
-        <div class="metric-card">
-          <div class="metric-icon metric-icon-orange">
-            <img :src="iconError" class="icon-img" alt="" />
+        <div class="overview-card">
+          <div class="overview-top">
+            <span class="overview-period">本月</span>
+            <span class="overview-trend up">+1.3%</span>
           </div>
-          <div class="metric-body">
-            <div class="metric-label">运行异常</div>
-            <div class="metric-value">{{ metrics.incidents }}</div>
+          <div class="overview-main">
+            <div class="overview-icon icon-orange">
+              <img src="../../assets/final.png" style="width: 48px;height: 48px;">
+
+              <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                <path d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+              </svg> -->
+            </div>
+            <div class="overview-content">
+              <div class="overview-label">准时完成率</div>
+              <div class="overview-value">94.2<span class="overview-unit">%</span></div>
+            </div>
           </div>
-          <img :src="bgError" class="bg-illustration" alt="" />
         </div>
 
-        <div class="metric-card">
-          <div class="metric-icon metric-icon-green">
-            <img :src="iconTask" class="icon-img" alt="" />
+        <div class="overview-card">
+          <div class="overview-top">
+            <span class="overview-period">需处理</span>
+            <span class="overview-trend up">+2</span>
           </div>
-          <div class="metric-body">
-            <div class="metric-label">待办任务</div>
-            <div class="metric-value">{{ metrics.tasks }}</div>
+          <div class="overview-main">
+            <div class="overview-icon icon-purple">
+              <img src="../../assets/sign.png" style="width: 48px;height: 48px;">
+              <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg> -->
+            </div>
+            <div class="overview-content">
+              <div class="overview-label">待放行签署</div>
+              <div class="overview-value">3</div>
+            </div>
           </div>
-          <img :src="bgTask" class="bg-illustration" alt="" />
+        </div>
+
+        <div class="overview-card">
+          <div class="overview-top">
+            <span class="overview-period">本季度</span>
+            <span class="overview-trend up">+0.4%</span>
+          </div>
+          <div class="overview-main">
+            <div class="overview-icon icon-green">
+              <img src="../../assets/goal.png" style="width: 48px;height: 48px;">
+
+              <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg> -->
+            </div>
+            <div class="overview-content">
+              <div class="overview-label">合规得分</div>
+              <div class="overview-value">98.7<span class="overview-unit">%</span></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="dashboard-section">
-      <h3 class="section-title">已部署资源</h3>
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-icon metric-icon-purple">
-            <img :src="iconProcess" class="icon-img" alt="" />
+      <div class="dashboard-row">
+        <!-- 机队维修状态 -->
+        <div class="dashboard-card fleet-status-card">
+          <div class="card-header">
+            <span class="card-title">机队维修状态</span>
+            <span class="card-link">全部 →</span>
           </div>
-          <div class="metric-body">
-            <div class="metric-label">流程定义</div>
-            <div class="metric-value">{{ metrics.processDefinitions }}</div>
+          <div class="fleet-grid">
+            <div class="fleet-item">
+              <div class="fleet-info">
+                <div class="fleet-reg">B-6792</div>
+                <div class="fleet-model">B737-800</div>
+                <div class="fleet-tag tag-green">正常运营</div>
+              </div>
+              <div class="fleet-plane">
+                <img src="../../assets/airport.png" style="width: 40px;height: 40px;">
+              </div>
+            </div>
+            <div class="fleet-item">
+              <div class="fleet-info">
+                <div class="fleet-reg">B-5432</div>
+                <div class="fleet-model">A320neo</div>
+                <div class="fleet-tag tag-orange">C检进行中</div>
+              </div>
+              <div class="fleet-plane">                
+                <img src="../../assets/airport.png" style="width: 40px;height: 40px;">
+            </div>
+            </div>
+            <div class="fleet-item">
+              <div class="fleet-info">
+                <div class="fleet-reg">B-7892</div>
+                <div class="fleet-model">B787-9</div>
+                <div class="fleet-tag tag-green">正常运营</div>
+              </div>
+              <div class="fleet-plane">
+                <img src="../../assets/airport.png" style="width: 40px;height: 40px;">
+
+              </div>
+            </div>
+            <div class="fleet-item">
+              <div class="fleet-info">
+                <div class="fleet-reg">B-1423</div>
+                <div class="fleet-model">A321XLR</div>
+                <div class="fleet-tag tag-yellow">A检进行中</div>
+              </div>
+              <div class="fleet-plane">
+                <img src="../../assets/airport.png" style="width: 40px;height: 40px;">
+
+              </div>
+            </div>
+            <div class="fleet-item">
+              <div class="fleet-info">
+                <div class="fleet-reg">B-9031</div>
+                <div class="fleet-model">B737 MAX8</div>
+                <div class="fleet-tag tag-green">正常运营</div>
+              </div>
+              <div class="fleet-plane">
+                <img src="../../assets/airport.png" style="width: 40px;height: 40px;">
+
+              </div>
+            </div>
+            <div class="fleet-item">
+              <div class="fleet-info">
+                <div class="fleet-reg">B-8821</div>
+                <div class="fleet-model">A330-00</div>
+                <div class="fleet-tag tag-blue">计划检修</div>
+              </div>
+              <div class="fleet-plane">
+                <img src="../../assets/airport.png" style="width: 40px;height: 40px;">
+
+              </div>
+            </div>
           </div>
-          <img :src="bgProcess" class="bg-illustration" alt="" />
         </div>
 
-        <div class="metric-card">
-          <div class="metric-icon metric-icon-teal">
-            <img :src="iconDecision" class="icon-img" alt="" />
+        <!-- 实时告警 -->
+        <div class="dashboard-card alert-card">
+          <div class="card-header">
+            <span class="card-title">实时告警</span>
+            <span class="card-link">全部告警 →</span>
           </div>
-          <div class="metric-body">
-            <div class="metric-label">决策定义</div>
-            <div class="metric-value">{{ metrics.decisionDefinitions }}</div>
+          <div class="alert-list">
+            <div class="alert-item">
+              <div class="alert-dot dot-red"></div>
+              <div class="alert-content">
+                <div class="alert-title">B-5432 发动机孔探工单 WO-2847 超期未关闭</div>
+                <div class="alert-meta">17:12 · 工程部 · 优先级 P1</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot dot-orange"></div>
+              <div class="alert-content">
+                <div class="alert-title">张工 <span class="alert-badge">CACC</span> 执照授权将于7天后到期</div>
+                <div class="alert-meta">16:45 · 人力资源 · 优先级 P2</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot dot-yellow"></div>
+              <div class="alert-content">
+                <div class="alert-title">液压软管检合CAL-038 检验到期待送检</div>
+                <div class="alert-meta">16:20 · 工具室 · 优先级 P2</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot dot-blue"></div>
+              <div class="alert-content">
+                <div class="alert-title">B-1423 方向舵更换工单已完成质检待放行</div>
+                <div class="alert-meta">15:58 · 质量部 · 待签署</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot dot-green"></div>
+              <div class="alert-content">
+                <div class="alert-title">B-6792 定检 WO-2831 全部关闭，放行完成</div>
+                <div class="alert-meta">14:33 · 放行岗 · 已完成</div>
+              </div>
+            </div>
           </div>
-          <img :src="bgDecision" class="bg-illustration" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <div class="dashboard-row">
+        <!-- B-5432 C检进度 -->
+        <div class="dashboard-card progress-card">
+          <div class="card-header">
+            <span class="card-title">B-5432 C检进度</span>
+            <span class="card-link">工单详情 →</span>
+          </div>
+          <div ref="progressChart" class="progress-chart"></div>
         </div>
 
-        <div class="metric-card">
-          <div class="metric-icon metric-icon-cyan">
-            <img :src="iconDeployment" class="icon-img" alt="" />
+        <!-- 合规指标概览 -->
+        <div class="dashboard-card gauge-card">
+          <div class="card-header">
+            <span class="card-title">合规指标概览</span>
+            <span class="card-link">详细报告 →</span>
           </div>
-          <div class="metric-body">
-            <div class="metric-label">部署</div>
-            <div class="metric-value">{{ metrics.deployments }}</div>
+          <div class="gauge-grid">
+            <div
+              v-for="(item, index) in gaugeData"
+              :key="index"
+              :ref="el => setGaugeRef(el, index)"
+              class="gauge-item"
+            ></div>
           </div>
-          <img :src="bgDeployment" class="bg-illustration" alt="" />
         </div>
       </div>
     </div>
@@ -85,21 +244,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 import { getDashboardMetrics, type DashboardMetrics } from '../../api/dashboard'
-
-import iconRunning from '../../styles/切图/图标渐变底 - 运行中流程实例@2x.png'
-import iconError from '../../styles/切图/图标渐变底 - 运行异常@2x.png'
-import iconTask from '../../styles/切图/图标渐变底 - 待办任务@2x.png'
-import iconProcess from '../../styles/切图/图标渐变底 - 流程定义@2x.png'
-import iconDecision from '../../styles/切图/图标渐变底 - 决策定义@2x.png'
-import iconDeployment from '../../styles/切图/图标渐变底 - 部署@2x.png'
-
-import bgRunning from '../../styles/切图/淡色插画 - 运行中流程实例@2x.png'
-import bgError from '../../styles/切图/淡色插画 - 运行异常@2x.png'
-import bgTask from '../../styles/切图/淡色插画 - 待办任务@2x.png'
-import bgProcess from '../../styles/切图/淡色插画 - 流程定义@2x.png'
-import bgDecision from '../../styles/切图/淡色插画 - 决策定义@2x.png'
-import bgDeployment from '../../styles/切图/淡色插画 - 部署@2x.png'
 
 const metrics = ref<DashboardMetrics>({
   runningProcessInstances: 0,
@@ -128,6 +274,8 @@ const startPolling = () => {
 onMounted(() => {
   fetchMetrics()
   startPolling()
+  initCharts()
+  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
@@ -135,7 +283,163 @@ onBeforeUnmount(() => {
     clearInterval(timer)
     timer = null
   }
+  window.removeEventListener('resize', handleResize)
+  disposeCharts()
 })
+
+// ===== ECharts =====
+const progressChart = ref<HTMLDivElement | null>(null)
+const gaugeItemRefs = ref<HTMLDivElement[]>([])
+let progressChartInstance: echarts.ECharts | null = null
+const gaugeChartInstances: echarts.ECharts[] = []
+
+const progressData = [
+  { name: '结构检查', value: 100, color: '#10B981' },
+  { name: '发动机维护', value: 87, color: '#3B82F6' },
+  { name: '电气系统', value: 72, color: '#3B82F6' },
+  { name: '客舱内饰', value: 45, color: '#F59E0B' },
+  { name: '起落架系统', value: 28, color: '#EF4444' },
+  { name: '燃油系统', value: 0, color: '#E5E7EB' }
+]
+
+const gaugeData = [
+  { name: '工单按时完成', value: 95, color: '#3B82F6' },
+  { name: '文件完整率', value: 98, color: '#10B981' },
+  { name: '资质合规率', value: 90, color: '#3B82F6' },
+  { name: '缺陷整改率', value: 80, color: '#F59E0B' },
+  { name: '工具检验率', value: 98, color: '#10B981' },
+  { name: '件料追溯率', value: 96, color: '#3B82F6' }
+]
+
+const setGaugeRef = (el: any, index: number) => {
+  if (el) {
+    gaugeItemRefs.value[index] = el as HTMLDivElement
+  }
+}
+
+const initProgressChart = () => {
+  if (!progressChart.value) return
+  progressChartInstance = echarts.init(progressChart.value)
+  progressChartInstance.setOption({
+    grid: {
+      left: '3%',
+      right: '8%',
+      top: '2%',
+      bottom: '2%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      max: 100,
+      show: false
+    },
+    yAxis: {
+      type: 'category',
+      data: progressData.map(item => item.name),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#374151',
+        fontSize: 13,
+        fontFamily: 'Source Han Sans SC'
+      }
+    },
+    series: [
+      {
+        type: 'bar',
+        data: progressData.map(item => ({
+          value: item.value,
+          itemStyle: {
+            color: item.color,
+            borderRadius: [0, 6, 6, 0]
+          }
+        })),
+        barWidth: 10,
+        label: {
+          show: true,
+          position: 'right',
+          formatter: '{c}%',
+          color: '#374151',
+          fontSize: 13,
+          fontFamily: 'Source Han Sans SC'
+        },
+        showBackground: true,
+        backgroundStyle: {
+          color: '#F3F4F6',
+          borderRadius: [0, 6, 6, 0]
+        }
+      }
+    ]
+  })
+}
+
+const initGaugeCharts = () => {
+  gaugeData.forEach((item, index) => {
+    const el = gaugeItemRefs.value[index]
+    if (!el) return
+    const chart = echarts.init(el)
+    chart.setOption({
+      series: [
+        {
+          type: 'gauge',
+          startAngle: 90,
+          endAngle: -270,
+          pointer: { show: false },
+          progress: {
+            show: true,
+            overlap: false,
+            roundCap: true,
+            clip: false,
+            itemStyle: { color: item.color }
+          },
+          axisLine: {
+            lineStyle: {
+              width: 8,
+              color: [[1, '#F3F4F6']]
+            }
+          },
+          splitLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { show: false },
+          data: [{ value: item.value, name: item.name }],
+          title: {
+            offsetCenter: ['0%', '35%'],
+            fontSize: 12,
+            color: '#6B7280',
+            fontFamily: 'Source Han Sans SC'
+          },
+          detail: {
+            valueAnimation: true,
+            offsetCenter: ['0%', '-5%'],
+            fontSize: 22,
+            fontWeight: 'bold',
+            color: item.color,
+            formatter: '{value}%',
+            fontFamily: 'Source Han Sans SC'
+          }
+        }
+      ]
+    })
+    gaugeChartInstances.push(chart)
+  })
+}
+
+const initCharts = () => {
+  initProgressChart()
+  initGaugeCharts()
+}
+
+const handleResize = () => {
+  progressChartInstance?.resize()
+  gaugeChartInstances.forEach(chart => chart.resize())
+}
+
+const disposeCharts = () => {
+  progressChartInstance?.dispose()
+  progressChartInstance = null
+  gaugeChartInstances.forEach(chart => chart.dispose())
+  gaugeChartInstances.length = 0
+}
 </script>
 
 <style scoped>
@@ -144,7 +448,7 @@ onBeforeUnmount(() => {
 }
 
 .dashboard-header {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .dashboard-header h2 {
@@ -182,7 +486,7 @@ onBeforeUnmount(() => {
 }
 
 .dashboard-section + .dashboard-section {
-  margin-top: 36px;
+  margin-top: 20px;
 }
 
 .metrics-grid {
@@ -282,6 +586,318 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: #1F2937;
   line-height: 1;
+}
+
+/* ===== 顶部概览卡片 ===== */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  font-family: 'Source Han Sans SC', sans-serif;
+}
+
+.overview-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px 20px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  min-height: 130px;
+}
+
+.overview-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.overview-top {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  /* margin-bottom: 8px; */
+  font-size: 13px;
+}
+
+.overview-period {
+  color: #9CA3AF;
+}
+
+.overview-trend {
+  color: #EF4444;
+  font-weight: 500;
+}
+
+.overview-trend.up {
+  color: #EF4444;
+}
+
+.overview-main {
+  /* flex: 1; */
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.overview-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.overview-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-blue {
+  background: #EFF6FF;
+  color: #3B82F6;
+}
+
+.icon-orange {
+  background: #FFF7ED;
+  color: #F97316;
+}
+
+.icon-purple {
+  background: #F5F3FF;
+  color: #8B5CF6;
+}
+
+.icon-green {
+  background: #ECFDF5;
+  color: #10B981;
+}
+
+.overview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overview-label {
+  font-size: 14px;
+  color: #6B7280;
+}
+
+.overview-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 1;
+  font-family: 'Source Han Sans SC', sans-serif;
+}
+
+.overview-unit {
+  font-size: 16px;
+  font-weight: 500;
+  color: #6B7280;
+  margin-left: 2px;
+}
+
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -20px -20px 16px -20px;
+  padding: 20px 20px 12px 20px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.card-link {
+  font-size: 13px;
+  color: #3B82F6;
+  cursor: pointer;
+}
+
+/* ===== 机队维修状态 ===== */
+.fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.fleet-item {
+  background: #F8FAFC;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fleet-reg {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 4px;
+}
+
+.fleet-model {
+  font-size: 12px;
+  color: #6B7280;
+  margin-bottom: 8px;
+}
+
+.fleet-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-green {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.tag-orange {
+  background: #FFEDD5;
+  color: #EA580C;
+}
+
+.tag-yellow {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.tag-blue {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+
+.fleet-plane {
+  font-size: 32px;
+  opacity: 0.6;
+}
+
+/* ===== 实时告警 ===== */
+.alert-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-left: 16px;
+}
+
+.alert-list::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 10px;
+  bottom: 33px;
+  width: 2px;
+  background: #E5E7EB;
+}
+
+.alert-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.alert-dot {
+  position: absolute;
+  left: -10px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.dot-red {
+  background: #EF4444;
+}
+
+.dot-orange {
+  background: #F97316;
+}
+
+.dot-yellow {
+  background: #EAB308;
+}
+
+.dot-blue {
+  background: #3B82F6;
+}
+
+.dot-green {
+  background: #10B981;
+}
+
+.alert-title {
+  font-size: 14px;
+  color: #1F2937;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.alert-badge {
+  display: inline-block;
+  background: #DBEAFE;
+  color: #2563EB;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 4px;
+}
+
+.alert-meta {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+/* ===== 底部 ECharts 图表 ===== */
+.progress-card,
+.gauge-card {
+  min-height: 360px;
+}
+
+.progress-chart {
+  width: 100%;
+  height: 280px;
+}
+
+.gauge-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  height: 280px;
+}
+
+.gauge-item {
+  width: 100%;
+  height: 140px;
 }
 
 /* .bg-illustration {
