@@ -61,6 +61,56 @@ function fitDiagram() {
   canvas.zoom('fit-viewport', 'auto')
 }
 
+function findPath(graph: Record<string, string[]>, start: string, target: string): string[] | null {
+  const visited = new Set<string>()
+  const queue: string[][] = [[start]]
+  while (queue.length) {
+    const path = queue.shift()!
+    const node = path[path.length - 1]
+    if (node === target) return path
+    if (visited.has(node)) continue
+    visited.add(node)
+    const neighbors = graph[node] || []
+    for (const neighbor of neighbors) {
+      queue.push([...path, neighbor])
+    }
+  }
+  return null
+}
+
+function findCompletedByTrace(elementRegistry: any, activeIds: string[]): string[] {
+  const allElements = elementRegistry.getAll()
+  const sequenceFlows = allElements.filter((e: any) => e.type === 'bpmn:SequenceFlow')
+  const graph: Record<string, string[]> = {}
+  sequenceFlows.forEach((flow: any) => {
+    const source = flow.source?.id
+    const target = flow.target?.id
+    if (source && target) {
+      if (!graph[source]) graph[source] = []
+      graph[source].push(target)
+    }
+  })
+
+  const startEvents = allElements
+    .filter((e: any) => e.type === 'bpmn:StartEvent')
+    .map((e: any) => e.id)
+
+  const completed = new Set<string>()
+  activeIds.forEach((activeId) => {
+    for (const startId of startEvents) {
+      const path = findPath(graph, startId, activeId)
+      if (path) {
+        path.forEach((id) => {
+          if (id !== activeId) completed.add(id)
+        })
+        break
+      }
+    }
+  })
+
+  return Array.from(completed)
+}
+
 async function renderDiagram() {
   if (!canvasRef.value || !props.xml) return
   loading.value = true
@@ -86,6 +136,11 @@ async function renderDiagram() {
 
     const activeIds = props.activeActivityIds || []
     const completedIds = props.completedActivityIds || []
+    const traceCompletedIds = completedIds.length === 0 && activeIds.length > 0
+      ? findCompletedByTrace(elementRegistry, activeIds)
+      : []
+    const effectiveCompletedIds = completedIds.length > 0 ? completedIds : traceCompletedIds
+    console.log('BPMN activeIds:', activeIds, 'completedIds:', completedIds, 'traceCompletedIds:', traceCompletedIds)
 
     activeIds.forEach((activityId) => {
       const el = elementRegistry.get(activityId)
@@ -99,7 +154,7 @@ async function renderDiagram() {
       }
     })
 
-    completedIds.forEach((activityId) => {
+    effectiveCompletedIds.forEach((activityId) => {
       const el = elementRegistry.get(activityId)
       if (el) {
         canvas.addMarker(activityId, completedMarkerClass)
@@ -187,10 +242,10 @@ onBeforeUnmount(() => {
 }
 
 :deep(.bpmn-activity-completed .djs-visual > :first-child) {
-  stroke: #409eff !important;
+  stroke: #9ca3af !important;
   stroke-width: 2px !important;
   stroke-dasharray: 4 2;
-  fill: rgba(64, 158, 255, 0.05) !important;
+  fill: rgba(156, 163, 175, 0.3) !important;
 }
 
 .viewer-canvas :deep(.activity-overlay) {
@@ -208,6 +263,6 @@ onBeforeUnmount(() => {
 }
 
 .viewer-canvas :deep(.activity-overlay.completed) {
-  background: #409eff;
+  background: #9ca3af;
 }
 </style>

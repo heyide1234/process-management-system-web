@@ -61,7 +61,7 @@
       <el-table-column prop="id" label="实例ID" min-width="220" show-overflow-tooltip />
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" link type="primary" @click="openDetailDialog(row.id)">详情</el-button>
+          <el-button size="small" link type="primary" @click="openDetailDialog(row.id)">流程监控</el-button>
           <el-button
             v-if="!row.ended && !row.suspended"
             size="small"
@@ -413,10 +413,22 @@ const openDetailDialog = async (id: string) => {
         activityList.value = allFlat
         const leaves = collectLeafActivities([root])
         activeActivityIds.value = leaves.map((a: any) => a.activityId)
-        const parents = allFlat.filter((a: any) =>
-          !leaves.some((l: any) => l.id === a.id)
-        )
-        completedActivityIds.value = parents.map((a: any) => a.activityId)
+        try {
+          const historicRes = await getHistoricActivityInstances({
+            processInstanceId: id,
+            sortBy: 'startTime',
+            sortOrder: 'asc',
+            maxResults: 200
+          })
+          completedActivityIds.value = historicRes.data
+            .filter((a: any) => a.endTime && a.activityType !== 'processInstance')
+            .map((a: any) => a.activityId)
+        } catch {
+          const parents = allFlat.filter((a: any) =>
+            !leaves.some((l: any) => l.id === a.id)
+          )
+          completedActivityIds.value = parents.map((a: any) => a.activityId)
+        }
         try {
           const taskRes = await getTasks({ processInstanceId: id, maxResults: 200 })
           const map: Record<string, string | null> = {}

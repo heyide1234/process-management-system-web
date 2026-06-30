@@ -54,6 +54,14 @@ export function getTaskCount(params?: {
   return api.get<{ count: number }>('/engine-rest/task/count', { params })
 }
 
+export function getHistoricTaskInstanceCount(data?: {
+  taskAssignee?: string
+  finished?: boolean
+  unfinished?: boolean
+}) {
+  return api.post<{ count: number }>('/engine-rest/history/task/count', data)
+}
+
 export function getTask(id: string) {
   return api.get<Task>('/engine-rest/task/' + id)
 }

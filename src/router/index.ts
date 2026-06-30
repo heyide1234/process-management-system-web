@@ -21,12 +21,32 @@ const routes = [
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('../views/dashboard/DashboardView.vue')
+        component: () => import('../views/dashboard/DashboardViewDemo.vue')
       },
       {
-        path: 'tasks/my',
-        name: 'TaskList',
-        component: () => import('../views/task/TaskList.vue')
+        path: 'tasks',
+        name: 'TaskManagement',
+        redirect: '/tasks/my',
+        children: [
+          {
+            path: 'my',
+            name: 'MyTasks',
+            component: () => import('../views/task/TaskList.vue'),
+            props: { taskType: 'myTasks' }
+          },
+          {
+            path: 'unclaimed',
+            name: 'UnclaimedTasks',
+            component: () => import('../views/task/TaskList.vue'),
+            props: { taskType: 'unclaimed' }
+          },
+          {
+            path: 'all',
+            name: 'AllTasks',
+            component: () => import('../views/task/TaskList.vue'),
+            props: { taskType: 'all' }
+          }
+        ]
       },
       {
         path: 'process/definitions',
@@ -49,19 +69,26 @@ const routes = [
         component: () => import('../views/process/BpmnDesigner.vue')
       },
       {
-        path: 'admin/users',
-        name: 'UserList',
-        component: () => import('../views/admin/UserList.vue')
-      },
-      {
-        path: 'admin/groups',
-        name: 'GroupList',
-        component: () => import('../views/admin/GroupList.vue')
-      },
-      {
-        path: 'admin/authorizations',
-        name: 'AuthorizationList',
-        component: () => import('../views/admin/AuthorizationList.vue')
+        path: 'admin',
+        name: 'UserManagement',
+        redirect: '/admin/users',
+        children: [
+          {
+            path: 'users',
+            name: 'UserList',
+            component: () => import('../views/admin/UserList.vue')
+          },
+          {
+            path: 'groups',
+            name: 'GroupList',
+            component: () => import('../views/admin/GroupList.vue')
+          },
+          {
+            path: 'authorizations',
+            name: 'AuthorizationList',
+            component: () => import('../views/admin/AuthorizationList.vue')
+          }
+        ]
       },
       {
         path: 'profile',

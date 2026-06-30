@@ -16,41 +16,65 @@
         background-color="transparent"
         text-color="rgba(255,255,255,0.8)"
         active-text-color="#FFFFFF"
-        
       >
         <el-menu-item index="/dashboard">
           <img :src="menuDashboard" class="menu-icon" alt="" />
-          <template #title>仪表盘</template>
+          <template #title>流程监控</template>
         </el-menu-item>
 
-        <el-menu-item index="/tasks/my">
-          <img :src="menuMyTask" class="menu-icon" alt="" />
-
-          <template #title>我的待办</template>
-        </el-menu-item>
-
-        <el-sub-menu index="process-mgmt" :class="{ 'sub-active': activeSubMenuIndex === 'process-mgmt' }">
+        <el-sub-menu index="task-mgmt" :class="{ 'sub-active': activeSubMenuIndex === 'task-mgmt' }">
           <template #title>
-            <img :src="menuProcessMgmt" class="menu-icon" alt="" />
-            <span>流程管理</span>
+            <img :src="menuMyTask" class="menu-icon" alt="" />
+            <span>我的待办</span>
           </template>
-          <el-menu-item index="/process/definitions">
-            <img :src="menuProcessDefinition" class="menu-icon" alt="" />
-            <template #title>流程定义</template>
+          <el-menu-item index="/tasks/my">
+            <span class="menu-dot"></span>
+            <template #title>我的待办</template>
           </el-menu-item>
-          <el-menu-item index="/process/instances">
-            <img :src="menuProcessInstance" class="menu-icon" alt="" />
-            <template #title>流程实例</template>
+          <el-menu-item index="/tasks/unclaimed">
+            <span class="menu-dot"></span>
+            <template #title>可签收</template>
           </el-menu-item>
-          <el-menu-item index="/process/deployments">
-            <img :src="menuProcessDeployment" class="menu-icon" alt="" />
-            <template #title>资源部署</template>
-          </el-menu-item>
-          <el-menu-item index="/process/designer">
-            <img :src="menuProcessDesigner" class="menu-icon" alt="" />
-            <template #title>流程设计</template>
+          <el-menu-item index="/tasks/all">
+            <span class="menu-dot"></span>
+            <template #title>全部任务</template>
           </el-menu-item>
         </el-sub-menu>
+
+        <el-menu-item index="/process/definitions">
+          <img :src="menuProcessDefinition" class="menu-icon" alt="" />
+          <template #title>流程定义</template>
+        </el-menu-item>
+
+        <el-menu-item index="/process/instances">
+          <img :src="menuProcessInstance" class="menu-icon" alt="" />
+          <template #title>流程实例</template>
+        </el-menu-item>
+
+        <el-menu-item index="/process/designer">
+          <img :src="menuProcessDesigner" class="menu-icon" alt="" />
+          <template #title>流程设计</template>
+        </el-menu-item>
+
+        <el-menu-item index="/process/deployments">
+          <img :src="menuProcessDeployment" class="menu-icon" alt="" />
+          <template #title>资源部署</template>
+        </el-menu-item>
+
+        <el-menu-item index="/form/templates">
+          <img :src="menuTemplateMgmt" class="menu-icon" alt="" />
+          <template #title>模板管理</template>
+        </el-menu-item>
+
+        <el-menu-item index="/form/designer">
+          <img :src="menuFormDesigner" class="menu-icon" alt="" />
+          <template #title>表单设计</template>
+        </el-menu-item>
+
+        <el-menu-item index="/form/records">
+          <img :src="menuFormRecord" class="menu-icon" alt="" />
+          <template #title>表单记录</template>
+        </el-menu-item>
 
         <el-sub-menu index="user-mgmt" :class="{ 'sub-active': activeSubMenuIndex === 'user-mgmt' }">
           <template #title>
@@ -58,37 +82,24 @@
             <span>用户管理</span>
           </template>
           <el-menu-item index="/admin/users">
-            <img :src="menuUserList" class="menu-icon" alt="" />
+            <!-- <img :src="menuUserList" class="menu-icon" alt="" /> -->
+            <span class="menu-dot"></span>
             <template #title>用户列表</template>
           </el-menu-item>
           <el-menu-item index="/admin/groups">
-            <img :src="menuGroupList" class="menu-icon" alt="" />
+            <!-- <img :src="menuGroupList" class="menu-icon" alt="" /> -->
+            <span class="menu-dot"></span>
             <template #title>组列表</template>
           </el-menu-item>
           <el-menu-item index="/admin/authorizations">
-            <img :src="menuAuthMgmt" class="menu-icon" alt="" />
+            <!-- <img :src="menuAuthMgmt" class="menu-icon" alt="" /> -->
+            <span class="menu-dot"></span>
+
             <template #title>权限管理</template>
           </el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="form-mgmt" :class="{ 'sub-active': activeSubMenuIndex === 'form-mgmt' }">
-          <template #title>
-            <img :src="menuFormMgmt" class="menu-icon" alt="" />
-            <span>表单管理</span>
-          </template>
-          <el-menu-item index="/form/templates">
-            <img :src="menuTemplateMgmt" class="menu-icon" alt="" />
-            <template #title>模板管理</template>
-          </el-menu-item>
-          <el-menu-item index="/form/designer">
-            <img :src="menuFormDesigner" class="menu-icon" alt="" />
-            <template #title>表单设计</template>
-          </el-menu-item>
-          <el-menu-item index="/form/records">
-            <img :src="menuFormRecord" class="menu-icon" alt="" />
-            <template #title>表单记录</template>
-          </el-menu-item>
-        </el-sub-menu>
+
       </el-menu>
     </el-aside>
 
@@ -101,7 +112,7 @@
           <div class="breadcrumb-area" >
             <el-breadcrumb separator="›">
               <el-breadcrumb-item>
-                <img src="../assets/dashboard2 _icon.png" style="width: 18px;height: 18px;">
+                <img :src="breadcrumbIcon" class="breadcrumb-icon" alt="" />
                 <!-- <el-icon><HomeFilled /></el-icon> -->
               </el-breadcrumb-item>
               <el-breadcrumb-item>
@@ -159,27 +170,24 @@ import {
   ArrowDown,
   SwitchButton,
   Fold,
-  Expand,
-  HomeFilled
+  Expand
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
 
 import logoIcon from '../styles/切图/1 1@2x.png'
-import menuDashboard from '@/assets/dashboard_icon.png'
+import menuDashboard from '@/assets/Monitor.png'
 import menuMyTask from '../assets/unFinal.png'
-import menuProcessMgmt from '../assets/line.png'
-import menuProcessDefinition from '../styles/切图/菜单图标 - 流程定义@2x.png'
-import menuProcessInstance from '../styles/切图/菜单图标 - 流程实例@2x.png'
-import menuProcessDeployment from '../styles/切图/菜单图标 - 流程部署@2x.png'
-import menuProcessDesigner from '../styles/切图/菜单图标 - 流程设计@2x.png'
+import menuProcessDefinition from '../assets/define.png'
+import menuProcessInstance from '../assets/example.png'
+import menuProcessDeployment from '../assets/source.png'
+import menuProcessDesigner from '../assets/design.png'
 import menuUserMgmt from '../assets/userManage.png'
 import menuUserList from '../styles/切图/菜单图标 - 用户列表@2x.png'
 import menuGroupList from '../styles/切图/菜单图标 - 组列表@2x.png'
 import menuAuthMgmt from '../styles/切图/菜单图标 - 权限管理@2x.png'
-import menuFormMgmt from '../assets/Form.png'
-import menuTemplateMgmt from '../styles/切图/菜单图标 - 模板管理@2x.png'
-import menuFormDesigner from '../styles/切图/菜单图标 - 表单设计@2x.png'
-import menuFormRecord from '../styles/切图/Frame@2x.png'
+import menuTemplateMgmt from '../assets/Template.png'
+import menuFormDesigner from '../assets/formDesign.png'
+import menuFormRecord from '../assets/formRecord.png'
 
 const router = useRouter()
 const route = useRoute()
@@ -192,17 +200,33 @@ const activeMenu = computed(() => route.path)
 
 const activeSubMenuIndex = computed(() => {
   const path = route.path
-  if (path.startsWith('/process/')) return 'process-mgmt'
   if (path.startsWith('/admin/')) return 'user-mgmt'
-  if (path.startsWith('/form/')) return 'form-mgmt'
+  if (path.startsWith('/tasks/')) return 'task-mgmt'
   return ''
+})
+
+const breadcrumbIcon = computed(() => {
+  const path = route.path
+  if (path.startsWith('/dashboard')) return menuDashboard
+  if (path.startsWith('/tasks/')) return menuMyTask
+  if (path.startsWith('/process/definitions')) return menuProcessDefinition
+  if (path.startsWith('/process/instances')) return menuProcessInstance
+  if (path.startsWith('/process/designer')) return menuProcessDesigner
+  if (path.startsWith('/process/deployments')) return menuProcessDeployment
+  if (path.startsWith('/form/templates')) return menuTemplateMgmt
+  if (path.startsWith('/form/designer')) return menuFormDesigner
+  if (path.startsWith('/form/records')) return menuFormRecord
+  if (path.startsWith('/admin/')) return menuUserMgmt
+  return menuDashboard
 })
 
 const currentPageName = computed(() => {
   const path = route.path
   const nameMap: Record<string, string> = {
-    '/dashboard': '仪表盘',
+    '/dashboard': '流程监控',
     '/tasks/my': '我的待办',
+    '/tasks/unclaimed': '可签收任务',
+    '/tasks/all': '全部任务',
     '/process/definitions': '流程定义',
     '/process/instances': '流程实例',
     '/process/deployments': '资源部署',
@@ -329,8 +353,22 @@ const handleCommand = (command: string) => {
   border-radius: 4px;
 }
 
+.breadcrumb-area :deep(.el-breadcrumb) {
+  display: flex;
+  align-items: center;
+}
+
 .breadcrumb-area :deep(.el-breadcrumb__item) {
   font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-icon {
+  width: 16px;
+  height: 20px;
+  display: block;
+  filter: invert(42%) sepia(91%) saturate(1557%) hue-rotate(190deg) brightness(97%) contrast(101%);
 }
 
 .breadcrumb-area :deep(.el-breadcrumb__inner) {
@@ -503,10 +541,21 @@ const handleCommand = (command: string) => {
 
 /* ===== 图标 ===== */
 .sidebar-menu .menu-icon {
-  width: 20px;
+  width: 16px;
   height: 20px;
   margin-right: 10px;
   vertical-align: middle;
+}
+
+.sidebar-menu .menu-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 1);
+  margin-right: 18px;
+  margin-left: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .sidebar-menu.el-menu--collapse .menu-icon {

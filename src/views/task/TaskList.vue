@@ -1,14 +1,7 @@
 <template>
   <div class="task-page">
     <div class="page-header">
-      <h3>任务管理</h3>
-      <div class="tab-buttons">
-        <el-radio-group v-model="taskTab" @change="onTabChange">
-          <el-radio-button value="myTasks">我的待办</el-radio-button>
-          <el-radio-button value="unclaimed">可签收</el-radio-button>
-          <el-radio-button value="all">全部任务</el-radio-button>
-        </el-radio-group>
-      </div>
+      <h3>{{ pageTitle }}</h3>
     </div>
 
     <div class="search-bar">
@@ -190,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -208,6 +201,10 @@ import { Tickets } from '@element-plus/icons-vue'
 import { formatDateTime, formatTableTime } from '../../utils/format'
 import { useAuthStore } from '../../stores/auth'
 
+const props = defineProps<{
+  taskType?: 'myTasks' | 'unclaimed' | 'all'
+}>()
+
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -221,10 +218,20 @@ const currentUser = ref(authStore.username)
 
 const taskList = ref<Task[]>([])
 const loading = ref(false)
-const taskTab = ref('myTasks')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+const taskTab = computed(() => props.taskType || 'myTasks')
+
+const pageTitle = computed(() => {
+  const titleMap: Record<string, string> = {
+    myTasks: '我的待办',
+    unclaimed: '可签收任务',
+    all: '全部任务'
+  }
+  return titleMap[taskTab.value] || '任务管理'
+})
 
 const search = reactive({
   name: '',
@@ -283,11 +290,6 @@ const resetSearch = () => {
   search.name = ''
   search.processDefinitionKey = ''
   search.processInstanceId = ''
-  currentPage.value = 1
-  fetchTasks()
-}
-
-const onTabChange = () => {
   currentPage.value = 1
   fetchTasks()
 }
@@ -414,6 +416,11 @@ const openDetailDialog = async (id: string) => {
     ElMessage.error('获取任务详情失败')
   }
 }
+
+watch(() => props.taskType, () => {
+  currentPage.value = 1
+  fetchTasks()
+})
 
 onMounted(() => {
   fetchTasks()

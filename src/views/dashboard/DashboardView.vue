@@ -7,10 +7,10 @@
     <div class="dashboard-section">
       <div class="overview-grid">
         <div class="overview-card">
-          <div class="overview-top">
+          <!-- <div class="overview-top">
             <span class="overview-period">较昨日</span>
             <span class="overview-trend up">+8</span>
-          </div>
+          </div> -->
           <div class="overview-main">
             <div class="overview-icon icon-blue">
               <img src="../../assets/online_ icon.png" style="width: 48px;height: 48px;">
@@ -19,17 +19,17 @@
               </svg> -->
             </div>
             <div class="overview-content">
-              <div class="overview-label">在修工单</div>
-              <div class="overview-value">47</div>
+              <div class="overview-label">未完成任务数</div>
+              <div class="overview-value">{{ metrics.tasks }}</div>
             </div>
           </div>
         </div>
 
         <div class="overview-card">
-          <div class="overview-top">
+          <!-- <div class="overview-top">
             <span class="overview-period">本月</span>
             <span class="overview-trend up">+1.3%</span>
-          </div>
+          </div> -->
           <div class="overview-main">
             <div class="overview-icon icon-orange">
               <img src="../../assets/final.png" style="width: 48px;height: 48px;">
@@ -41,16 +41,16 @@
             </div>
             <div class="overview-content">
               <div class="overview-label">准时完成率</div>
-              <div class="overview-value">94.2<span class="overview-unit">%</span></div>
+              <div class="overview-value">{{ metrics.onTimeCompletionRate }}<span class="overview-unit">%</span></div>
             </div>
           </div>
         </div>
 
         <div class="overview-card">
-          <div class="overview-top">
+          <!-- <div class="overview-top">
             <span class="overview-period">需处理</span>
             <span class="overview-trend up">+2</span>
-          </div>
+          </div> -->
           <div class="overview-main">
             <div class="overview-icon icon-purple">
               <img src="../../assets/sign.png" style="width: 48px;height: 48px;">
@@ -60,16 +60,16 @@
             </div>
             <div class="overview-content">
               <div class="overview-label">待放行签署</div>
-              <div class="overview-value">3</div>
+              <div class="overview-value">{{ metrics.pendingReleaseSignCount }}</div>
             </div>
           </div>
         </div>
 
         <div class="overview-card">
-          <div class="overview-top">
+          <!-- <div class="overview-top">
             <span class="overview-period">本季度</span>
             <span class="overview-trend up">+0.4%</span>
-          </div>
+          </div> -->
           <div class="overview-main">
             <div class="overview-icon icon-green">
               <img src="../../assets/goal.png" style="width: 48px;height: 48px;">
@@ -80,7 +80,7 @@
             </div>
             <div class="overview-content">
               <div class="overview-label">合规得分</div>
-              <div class="overview-value">98.7<span class="overview-unit">%</span></div>
+              <div class="overview-value">{{ metrics.complianceScore }}<span class="overview-unit">%</span></div>
             </div>
           </div>
         </div>
@@ -93,7 +93,7 @@
         <div class="dashboard-card fleet-status-card">
           <div class="card-header">
             <span class="card-title">机队维修状态</span>
-            <span class="card-link">全部 →</span>
+            <!-- <span class="card-link">全部 →</span> -->
           </div>
           <div class="fleet-grid">
             <div class="fleet-item">
@@ -166,45 +166,22 @@
         <!-- 实时告警 -->
         <div class="dashboard-card alert-card">
           <div class="card-header">
-            <span class="card-title">实时告警</span>
-            <span class="card-link">全部告警 →</span>
+            <span class="card-title">实时告警 <span class="alert-count-badge">{{ alertCount }}</span></span>
+            <!-- <span class="card-link">全部告警 →</span> -->
           </div>
           <div class="alert-list">
-            <div class="alert-item">
-              <div class="alert-dot dot-red"></div>
+            <div
+              v-for="alert in alerts"
+              :key="alert.id"
+              class="alert-item"
+            >
+              <div class="alert-dot" :class="getIncidentDotClass(alert.incidentType)"></div>
               <div class="alert-content">
-                <div class="alert-title">B-5432 发动机孔探工单 WO-2847 超期未关闭</div>
-                <div class="alert-meta">17:12 · 工程部 · 优先级 P1</div>
+                <div class="alert-title">{{ alert.incidentMessage || alert.incidentType }}</div>
+                <div class="alert-meta">{{ formatIncidentTime(alert.incidentTimestamp) }} · 优先级 {{ getIncidentPriority(alert.incidentType) }}</div>
               </div>
             </div>
-            <div class="alert-item">
-              <div class="alert-dot dot-orange"></div>
-              <div class="alert-content">
-                <div class="alert-title">张工 <span class="alert-badge">CACC</span> 执照授权将于7天后到期</div>
-                <div class="alert-meta">16:45 · 人力资源 · 优先级 P2</div>
-              </div>
-            </div>
-            <div class="alert-item">
-              <div class="alert-dot dot-yellow"></div>
-              <div class="alert-content">
-                <div class="alert-title">液压软管检合CAL-038 检验到期待送检</div>
-                <div class="alert-meta">16:20 · 工具室 · 优先级 P2</div>
-              </div>
-            </div>
-            <div class="alert-item">
-              <div class="alert-dot dot-blue"></div>
-              <div class="alert-content">
-                <div class="alert-title">B-1423 方向舵更换工单已完成质检待放行</div>
-                <div class="alert-meta">15:58 · 质量部 · 待签署</div>
-              </div>
-            </div>
-            <div class="alert-item">
-              <div class="alert-dot dot-green"></div>
-              <div class="alert-content">
-                <div class="alert-title">B-6792 定检 WO-2831 全部关闭，放行完成</div>
-                <div class="alert-meta">14:33 · 放行岗 · 已完成</div>
-              </div>
-            </div>
+            <div v-if="alerts.length === 0" class="alert-empty">暂无未处理告警</div>
           </div>
         </div>
       </div>
@@ -216,7 +193,7 @@
         <div class="dashboard-card progress-card">
           <div class="card-header">
             <span class="card-title">B-5432 C检进度</span>
-            <span class="card-link">工单详情 →</span>
+            <!-- <span class="card-link">工单详情 →</span> -->
           </div>
           <div ref="progressChart" class="progress-chart"></div>
         </div>
@@ -225,11 +202,11 @@
         <div class="dashboard-card gauge-card">
           <div class="card-header">
             <span class="card-title">合规指标概览</span>
-            <span class="card-link">详细报告 →</span>
+            <!-- <span class="card-link">详细报告 →</span> -->
           </div>
           <div class="gauge-grid">
             <div
-              v-for="(item, index) in gaugeData"
+              v-for="(_item, index) in gaugeData"
               :key="index"
               :ref="el => setGaugeRef(el, index)"
               class="gauge-item"
@@ -238,6 +215,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -246,6 +224,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getDashboardMetrics, type DashboardMetrics } from '../../api/dashboard'
+import { getIncidents, getIncidentCount, type Incident } from '../../api/incident'
 
 const metrics = ref<DashboardMetrics>({
   runningProcessInstances: 0,
@@ -253,26 +232,79 @@ const metrics = ref<DashboardMetrics>({
   tasks: 0,
   processDefinitions: 0,
   decisionDefinitions: 0,
-  deployments: 0
+  deployments: 0,
+  onTimeCompletionRate: 100,
+  pendingReleaseSignCount: 0,
+  complianceScore: 0
 })
 
+const alerts = ref<Incident[]>([])
+const alertCount = ref(0)
+
 let timer: ReturnType<typeof setInterval> | null = null
+let lastInitTime = 0
 
 const fetchMetrics = async () => {
   try {
     const res = await getDashboardMetrics()
+    console.log('res', res);
+
     metrics.value = res
   } catch {
     ElMessage.error('获取仪表盘数据失败')
   }
 }
 
+const P1_TYPES = ['failedJob', 'failedExternalTask']
+
+function getIncidentPriority(incidentType: string): string {
+  return P1_TYPES.includes(incidentType) ? 'P1' : 'P2'
+}
+
+function getIncidentDotClass(incidentType: string): string {
+  if (incidentType === 'failedJob') return 'dot-red'
+  if (incidentType === 'failedExternalTask') return 'dot-orange'
+  if (incidentType === 'failedJobDefinition') return 'dot-yellow'
+  return 'dot-blue'
+}
+
+function formatIncidentTime(timestamp: string): string {
+  const date = new Date(timestamp)
+  return date.toLocaleString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const fetchAlerts = async () => {
+  try {
+    const [incidentsRes, countRes] = await Promise.all([
+      getIncidents({ sortBy: 'incidentTimestamp', sortOrder: 'desc', maxResults: 10 }),
+      getIncidentCount()
+    ])
+    alerts.value = incidentsRes.data
+    alertCount.value = countRes.data.count
+  } catch {
+    ElMessage.error('获取实时告警失败')
+  }
+}
+
 const startPolling = () => {
-  timer = setInterval(fetchMetrics, 10000)
+  timer = setInterval(() => {
+    fetchMetrics()
+    fetchAlerts()
+  }, 10000)
 }
 
 onMounted(() => {
-  fetchMetrics()
+  const now = Date.now()
+  const isDevRemount = now - lastInitTime < 1000
+  lastInitTime = now
+
+  if (!isDevRemount) {
+    fetchMetrics()
+    fetchAlerts()
+  }
   startPolling()
   initCharts()
   window.addEventListener('resize', handleResize)
@@ -336,6 +368,7 @@ const initProgressChart = () => {
     yAxis: {
       type: 'category',
       data: progressData.map(item => item.name),
+      inverse: true,
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
@@ -402,6 +435,8 @@ const initGaugeCharts = () => {
           axisTick: { show: false },
           axisLabel: { show: false },
           data: [{ value: item.value, name: item.name }],
+          emphasis: { disabled: true },
+          animation: false,
           title: {
             offsetCenter: ['0%', '35%'],
             fontSize: 12,
@@ -409,7 +444,7 @@ const initGaugeCharts = () => {
             fontFamily: 'Source Han Sans SC'
           },
           detail: {
-            valueAnimation: true,
+            valueAnimation: false,
             offsetCenter: ['0%', '-5%'],
             fontSize: 22,
             fontWeight: 'bold',
@@ -634,7 +669,7 @@ const disposeCharts = () => {
 }
 
 .overview-main {
-  /* flex: 1; */
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -877,6 +912,28 @@ const disposeCharts = () => {
   color: #9CA3AF;
 }
 
+.alert-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: #EF4444;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.alert-empty {
+  text-align: center;
+  color: #9CA3AF;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
 /* ===== 底部 ECharts 图表 ===== */
 .progress-card,
 .gauge-card {
@@ -899,13 +956,4 @@ const disposeCharts = () => {
   width: 100%;
   height: 140px;
 }
-
-/* .bg-illustration {
-  position: absolute;
-  right: -20px;
-  bottom: -20px;
-  width: 150px;
-  height: 126px;
-  pointer-events: none;
-} */
 </style>
